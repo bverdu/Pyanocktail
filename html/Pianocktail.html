@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="fr">
+	<head>
+		<meta charset="utf-8" />
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>Pianocktail</title>
+		<meta name="description" content="" />
+		<meta name="author" content="Bertrand Verdu" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="favicon.png" />
+		<link rel="apple-touch-icon" href="favicon.png" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<script type="text/javascript">
+			var rb = 0;
+			var pb = 0;
+			var cb = 0;
+			var pos = 0;
+			var port = parseInt(window.location.port) + 1;
+			var hostname = window.location.hostname;
+			var wsUri = "ws://" + hostname + ":" + port + "/";
+			var output;
+			var websocket;
+			var down = false;
+			var cur_x;
+			var cur_y;
+			var lastev;
+
+			function isTouchDevice() {
+				return "ontouchstart" in window;
+			}
+
+			function drawPiano() {
+				output = document.getElementById('control_panel');
+				if(output.getContext) {
+					context = output.getContext("2d");
+					context.fillStyle = "#3f3e3e";
+					context.beginPath();
+					context.moveTo(5, 0);
+					context.lineTo(545, 0);
+					context.quadraticCurveTo(595, 8, 600, 50);
+					context.lineTo(600, 70);
+					context.quadraticCurveTo(575, 180, 450, 198);
+					context.quadraticCurveTo(282, 210, 185, 290);
+					context.quadraticCurveTo(180, 297, 170, 300);
+					context.lineTo(5, 300);
+					context.quadraticCurveTo(0, 300, 0, 295);
+					context.lineTo(0, 285);
+					context.lineTo(45, 285);
+					context.lineTo(45, 15);
+					context.lineTo(0, 15);
+					context.lineTo(0, 5);
+					context.quadraticCurveTo(0, 0, 5, 0);
+					context.fill();
+					context.fillStyle = 'black';
+					context.lineWidth = 7.5;
+					context.beginPath();
+					context.moveTo(8.8, 3.8);
+					context.lineTo(545, 3.8);
+					context.quadraticCurveTo(595, 8, 596.2, 50);
+					context.lineTo(596.2, 70);
+					context.quadraticCurveTo(575, 180, 450, 198);
+					context.quadraticCurveTo(282, 210, 185, 290);
+					context.quadraticCurveTo(180, 297, 170, 296.2);
+					context.lineTo(8.8, 296.2);
+					context.quadraticCurveTo(3.8, 296.2, 3.8, 296.2);
+					context.lineTo(3.8, 288.8);
+					context.lineTo(48.8, 288.8);
+					context.lineTo(48.8, 11.2);
+					context.lineTo(3.8, 11.2);
+					context.lineTo(8.8, 3.8);
+					context.quadraticCurveTo(0, 0, 5, 0);
+					context.stroke();
+				}
+			}
+
+			function writeToScreen(message) {
+				if(pos >= 280) {
+					pos = 0;
+					context.clearRect(0, 0, output.width, output.height);
+					drawPiano();
+					drawPianokeyboard();
+					context.fillStyle = "white";
+					pos = 0;
+				}
+				context.font = '15px Calibri';
+				pos = pos + 20;
+				context.fillText(message, 70, pos);
+			}
+
+			function drawKeyboard() {
+				canv = document.getElementById('piano_keyboard');
+				if(isTouchDevice()) {
+					//writeToScreen("touch");
+					canv.addEventListener('touchstart', notedown, true);
+					canv.addEventListener('touchend', noteup, true);
+					canv.addEventListener('touchmove', changenote, true);
+				} else {
+					//writeToScreen("desktop");
+					canv.addEventListener('mousedown', notedown, true);
+					canv.addEventListener('mouseup', noteup, true);
+					canv.addEventListener('mousemove', changenote, true);
+				}
+				if(canv.getContext) {
+					canvcontext = canv.getContext("2d");
+					canvcontext.fillStyle = "white";
+					canvcontext.strokeStyle = "black";
+					canvcontext.fillRect(0, 0, 800, 120);
+					canvcontext.fillStyle = "black"
+					for(var i = 0; i < 800; i = i + 100) {
+						canvcontext.moveTo(i + 100, 0);
+						canvcontext.lineTo(i + 100, 120);
+					}
+					canvcontext.stroke();
+					canvcontext.fillStyle = "black"
+					canvcontext.fillRect(62, 0, 75, 60)
+					canvcontext.fillRect(162, 0, 75, 60)
+					canvcontext.fillRect(362, 0, 75, 60)
+					canvcontext.fillRect(462, 0, 75, 60)
+					canvcontext.fillRect(562, 0, 75, 60)
+					canvcontext.fillRect(762, 0, 75, 60)
+				}
+			}
+
+			function drawPianokeyboard() {
+				context.fillStyle = 'white'
+				context.fillRect(10, 15, 35, 270)
+				context.beginPath();
+				context.fillStyle = 'black';
+				context.moveTo(45, 285)
+				y = 285;
+				tt = 1;
+				dd = 0;
+				for(var i = 0; i < 4; i++) {
+					var dep = 45;
+					var ar = 18;
+					if(i == 1) {
+						y = y - 4
+						context.lineTo(dep, y);
+						context.lineTo(ar, y)
+						y = y - 4
+						context.lineTo(ar, y)
+						context.lineTo(dep, y)
+						dd = 1
+						if(y < 19) {
+							i = 4;
+						}
+					}
+					if(i == 2) {
+						y = y - 2;
+						context.lineTo(dep, y);
+						context.lineTo(ar, y);
+						y = y - 4;
+						context.lineTo(ar, y);
+						context.lineTo(dep, y);
+						dd = 2;
+						if(tt == 0) {
+							i = 0;
+							tt = 1;
+							if(y < 19) {
+								i = 4;
+							}
+						}
+
+					}
+					if(i == 3) {
+						y = y - 2;
+						context.lineTo(dep, y);
+						context.lineTo(ar, y);
+						y = y - 4;
+						context.lineTo(ar, y);
+						context.lineTo(dep, y);
+						dd = 3;
+						tt = 0
+						i = 0
+						if(y < 19) {
+							i = 4;
+						}
+					}
+
+				}
+				context.fill();
+
+			}
+
+			function webSocketManager() {
+				/*websocket = new WebSocket(wsUri);*/
+				if('WebSocket' in window) {
+					websocket = new WebSocket(wsUri);
+				} else if('MozWebSocket' in window) {
+					websocket = new MozWebSocket(wsUri);
+				} else {
+					//not supported
+					return;
+				}
+				/*websocket = new MozWebSocket(wsUri);*/
+				websocket.onopen = function(evt) {
+					onOpen(evt)
+				};
+				websocket.onclose = function(evt) {
+					onClose(evt)
+				};
+				websocket.onmessage = function(evt) {
+					onMessage(evt)
+				};
+				websocket.onerror = function(evt) {
+					onError(evt)
+				};
+			}
+
+			function wsinit() {
+				rb = 0;
+				pb = 0;
+				cb = 0;
+				pos = 0;
+				drawPiano();
+				webSocketManager();
+				drawKeyboard();
+				drawPianokeyboard();
+			}
+
+			function onOpen(evt) {
+				context.fillStyle = "#008a00";
+				writeToScreen("CONNECTED");
+				setTimeout('doSend("status")', 50);
+			}
+
+			function onClose(evt) {
+				context.fillStyle = "#e81010";
+				writeToScreen("DISCONNECTED");
+			}
+
+			function onMessage(evt) {
+				if(isNaN(evt.data)) {
+					if(evt.data == "Recording") {
+						rb = 1;
+						pos = 0;
+						context.clearRect(0, 0, output.width, output.height);
+						drawPiano();
+						drawPianokeyboard();
+					}
+					context.fillStyle = "white";
+					writeToScreen(evt.data);
+
+				} else {
+					var note = parseInt(evt.data);
+					if(note > 0) {
+						context.fillStyle = "red";
+						context.fillRect(18, (note - 25) * 2.50, 27, 4);
+					} else {
+						drawPianokeyboard();
+					}
+				}
+				/*   websocket.close();*/
+			}
+
+			function onError(evt) {
+				context.fillStyle = "#e81010";
+				writeToScreen('ERROR: ' + evt.data);
+			}
+
+			function doSend(message) {
+				/*context.fillStyle = "#762086";
+				 writeToScreen("Action: " + message);*/
+				websocket.send(message);
+			}
+
+			function drawCanvas() {
+				var canvas = document.getElementById('control_panel')
+				if(canvas.getContext) {
+					var ctx = canvas.getContext("2d");
+					ctx.fillStyle = "rgb(200,0,0)";
+					ctx.fillRect(10, 10, 55, 50);
+					ctx.fillStyle = "rgba(0, 0, 200, 0.5)";
+					ctx.fillRect(30, 30, 55, 50);
+				}
+
+			}
+
+			function buttondown(id) {
+				doSend(id)
+			}
+
+			function buttonup(id) {
+				doSend("-" + id)
+			}
+
+			function buttonclick(buttonid) {
+				/*but = document.getElementById(buttonid)*/
+				console.log("button " + buttonid + " clicked rb= " + rb)
+				if(buttonid == 0) {
+					if(rb == 1) {
+						rb = 0;
+						doSend("stop");
+					}
+				}
+				/*doSend("stop");*/
+				if(buttonid == 1) {
+					if(rb == 0) {
+						rb = 1;
+						doSend("record");
+					}
+
+				}
+				if(buttonid == 2) {
+					doSend("reload");
+				}
+				if(buttonid == 3) {
+					doSend("cocktail");
+				}
+				if(buttonid == 4) {
+					doSend("panic");
+				}
+
+			}
+
+			function getevtPos(canva, evt) {
+				// get canvas position
+				var obj = canva;
+				var top = 0;
+				var left = 0;
+				while(obj && obj.tagName != 'BODY') {
+					top += obj.offsetTop;
+					left += obj.offsetLeft;
+					obj = obj.offsetParent;
+				}
+
+				// return relative mouse position
+				if(isTouchDevice()) {
+					var mouseX = evt.touches[0].clientX - left + window.pageXOffset;
+					var mouseY = evt.touches[0].clientY - top + window.pageYOffset;
+				} else {
+					var mouseX = evt.clientX - left + window.pageXOffset;
+					var mouseY = evt.clientY - top + window.pageYOffset;
+				}
+				return {
+					x : mouseX,
+					y : mouseY
+				};
+			}
+
+			function changenote(ev) {
+				/*context.fillStyle = "white";
+				 writeToScreen("note move");*/
+				ev.preventDefault();
+				if(down == true) {
+					var evtpos = getevtPos(canv, ev);
+					ev._x = evtpos.x;
+					ev._y = evtpos.y;
+					if(ev._y < 1 || ev._y >= 119) {
+						noteup(lastev);
+						return;
+					}
+					if(ev._x < 1 || ev._x >= 799) {
+						noteup(lastev);
+						return;
+					}
+					if((ev._y - cur_y) > 0) {
+						if( cur_y = 60) {
+							if((ev._x - cur_x) <= 0 || (ev._x - cur_x) > 100) {
+								noteup(lastev);
+								notedown(ev);
+								return;
+							}
+						} else {
+							if((ev._x - cur_x) <= 0 || (ev._x - cur_x) > 50) {
+								noteup(lastev);
+								notedown(ev);
+								return;
+							}
+						}
+					} else {
+						if((ev._x - cur_x) <= 0 || (ev._x - cur_x) > 50) {
+							noteup(lastev);
+							notedown(ev);
+							return;
+						}
+					}
+				}
+			}
+
+			function notedown(ev) {
+				ev.preventDefault();
+				down = true
+				canvcontext.fillStyle = "red"
+				var evtpos = getevtPos(canv, ev);
+				ev._x = evtpos.x;
+				ev._y = evtpos.y;
+				lastev = ev;
+				/*context.fillStyle = "white";
+				 writeToScreen("note down");
+				 writeToScreen("X= " + ev._x.toString());
+				 writeToScreen("Y= " + ev._y.toString());*/
+				if(ev._y > 60) {
+					cur_y = 60;
+					if(ev._x < 100) {
+						doSend("84");
+						canvcontext.fillRect(0, 60, 99, 100);
+						canvcontext.fillRect(0, 0, 62, 60);
+						cur_x = 0;
+					} else if(ev._x < 200) {
+						doSend("86");
+						canvcontext.fillRect(101, 60, 98, 100);
+						canvcontext.fillRect(137, 0, 25, 60);
+						cur_x = 100;
+					} else if(ev._x < 300) {
+						doSend("88");
+						canvcontext.fillRect(201, 60, 98, 100);
+						canvcontext.fillRect(237, 0, 62, 60);
+						cur_x = 200;
+					} else if(ev._x < 400) {
+						doSend("89");
+						canvcontext.fillRect(301, 60, 98, 100);
+						canvcontext.fillRect(301, 0, 62, 60);
+						cur_x = 300;
+					} else if(ev._x < 500) {
+						doSend("91");
+						canvcontext.fillRect(401, 60, 98, 100);
+						canvcontext.fillRect(437, 0, 25, 60);
+						cur_x = 400;
+					} else if(ev._x < 600) {
+						doSend("93");
+						canvcontext.fillRect(501, 60, 98, 100);
+						canvcontext.fillRect(537, 0, 25, 60);
+						cur_x = 500;
+					} else if(ev._x < 700) {
+						doSend("95");
+						canvcontext.fillRect(601, 60, 98, 100);
+						canvcontext.fillRect(637, 0, 62, 60);
+						cur_x = 600;
+					} else {
+						doSend("96");
+						canvcontext.fillRect(701, 60, 99, 100);
+						canvcontext.fillRect(701, 0, 63, 60);
+						cur_x = 700;
+					}
+				} else {
+					cur_y = 0
+					if(ev._x < 62) {
+						doSend("84");
+						canvcontext.fillRect(0, 60, 99, 100);
+						canvcontext.fillRect(0, 0, 62, 60);
+						cur_x = 0;
+					} else if(ev._x < 137) {
+						doSend("85");
+						canvcontext.fillRect(62, 0, 75, 60);
+						cur_x = 61;
+					} else if(ev._x < 162) {
+						doSend("86");
+						canvcontext.fillRect(101, 60, 98, 100);
+						canvcontext.fillRect(137, 0, 25, 60);
+						cur_x = 100;
+					} else if(ev._x < 237) {
+						doSend("87");
+						canvcontext.fillRect(162, 0, 75, 60);
+						cur_x = 161;
+					} else if(ev._x < 300) {
+						doSend("88");
+						canvcontext.fillRect(201, 60, 98, 100);
+						canvcontext.fillRect(237, 0, 62, 60);
+						cur_x = 200;
+					} else if(ev._x < 362) {
+						doSend("89");
+						canvcontext.fillRect(301, 60, 98, 100)
+						canvcontext.fillRect(301, 0, 62, 60)
+						cur_x = 300;
+					} else if(ev._x < 437) {
+						doSend("90")
+						canvcontext.fillRect(362, 0, 75, 60);
+						cur_x = 361;
+					} else if(ev._x < 462) {
+						doSend("91");
+						canvcontext.fillRect(401, 60, 98, 100);
+						canvcontext.fillRect(437, 0, 25, 60);
+						cur_x = 400;
+					} else if(ev._x < 537) {
+						doSend("92");
+						canvcontext.fillRect(462, 0, 75, 60);
+						cur_x = 462;
+					} else if(ev._x < 562) {
+						doSend("93");
+						canvcontext.fillRect(501, 60, 98, 100);
+						canvcontext.fillRect(537, 0, 25, 60);
+						cur_x = 500;
+					} else if(ev._x < 637) {
+						doSend("94");
+						canvcontext.fillRect(562, 0, 75, 60);
+						cur_x = 561;
+					} else if(ev._x < 700) {
+						doSend("95");
+						canvcontext.fillRect(601, 60, 98, 100);
+						canvcontext.fillRect(637, 0, 62, 60);
+						cur_x = 600;
+					} else if(ev._x < 762) {
+						doSend("96");
+						canvcontext.fillRect(701, 60, 99, 100);
+						canvcontext.fillRect(701, 0, 63, 60);
+						cur_x = 700;
+					} else {
+						doSend("97")
+						canvcontext.fillRect(762, 0, 75, 60);
+						cur_x = 761;
+					}
+				}
+
+			}
+
+			function noteup(ev) {
+				ev.preventDefault();
+				down = false;
+				canvcontext.fillStyle = "white";
+				/*context.fillStyle = "white";
+				writeToScreen("noteup");*/
+				//var evtpos = getevtPos(canv, ev);
+				ev._x = lastev._x;
+				ev._y = lastev._y;
+				/*writeToScreen("X= " + ev._x.toString());
+				 writeToScreen("Y= " + ev._y.toString());*/
+				if(ev._y > 60) {
+					if(ev._x < 100) {
+						doSend("-84");
+						canvcontext.fillRect(0, 60, 99, 100)
+						canvcontext.fillRect(0, 0, 62, 60)
+					} else if(ev._x < 200) {
+						doSend("-86");
+						canvcontext.fillRect(101, 60, 98, 100)
+						canvcontext.fillRect(137, 0, 25, 60)
+					} else if(ev._x < 300) {
+						doSend("-88");
+						canvcontext.fillRect(201, 60, 98, 100)
+						canvcontext.fillRect(237, 0, 62, 60)
+					} else if(ev._x < 400) {
+						doSend("-89");
+						canvcontext.fillRect(301, 60, 98, 100)
+						canvcontext.fillRect(301, 0, 62, 60)
+					} else if(ev._x < 500) {
+						doSend("-91");
+						canvcontext.fillRect(401, 60, 98, 100)
+						canvcontext.fillRect(437, 0, 25, 60)
+					} else if(ev._x < 600) {
+						doSend("-93");
+						canvcontext.fillRect(501, 60, 98, 100)
+						canvcontext.fillRect(537, 0, 25, 60)
+					} else if(ev._x < 700) {
+						doSend("-95");
+						canvcontext.fillRect(601, 60, 98, 100)
+						canvcontext.fillRect(637, 0, 62, 60)
+					} else {
+						doSend("-96");
+						canvcontext.fillRect(701, 60, 99, 100)
+						canvcontext.fillRect(701, 0, 63, 60)
+					}
+				} else {
+					if(ev._x < 62) {
+						doSend("-84");
+						canvcontext.fillRect(0, 60, 99, 100)
+						canvcontext.fillRect(0, 0, 62, 60)
+					} else if(ev._x < 137) {
+						doSend("-85")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(62, 0, 75, 60)
+					} else if(ev._x < 162) {
+						doSend("-86")
+						canvcontext.fillRect(101, 60, 98, 100)
+						canvcontext.fillRect(137, 0, 25, 60)
+					} else if(ev._x < 237) {
+						doSend("-87")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(162, 0, 75, 60)
+					} else if(ev._x < 300) {
+						doSend("-88")
+						canvcontext.fillRect(201, 60, 98, 100)
+						canvcontext.fillRect(237, 0, 62, 60)
+					} else if(ev._x < 362) {
+						doSend("-89")
+						canvcontext.fillRect(301, 60, 98, 100)
+						canvcontext.fillRect(301, 0, 62, 60)
+					} else if(ev._x < 437) {
+						doSend("-90")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(362, 0, 75, 60)
+					} else if(ev._x < 462) {
+						doSend("-91")
+						canvcontext.fillRect(401, 60, 98, 100)
+						canvcontext.fillRect(437, 0, 25, 60)
+					} else if(ev._x < 537) {
+						doSend("-92")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(462, 0, 75, 60)
+					} else if(ev._x < 562) {
+						doSend("-93")
+						canvcontext.fillRect(501, 60, 98, 100)
+						canvcontext.fillRect(537, 0, 25, 60)
+					} else if(ev._x < 637) {
+						doSend("-94")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(562, 0, 75, 60)
+					} else if(ev._x < 700) {
+						doSend("-95")
+						canvcontext.fillRect(601, 60, 98, 100)
+						canvcontext.fillRect(637, 0, 62, 60)
+					} else if(ev._x < 762) {
+						doSend("-96")
+						canvcontext.fillRect(701, 60, 99, 100)
+						canvcontext.fillRect(701, 0, 63, 60)
+					} else {
+						doSend("-97")
+						canvcontext.fillStyle = "black"
+						canvcontext.fillRect(762, 0, 75, 60)
+					}
+				}
+
+			}
+		</script>
+	</head>
+	<body  onload="wsinit()">
+		<div id="page">
+			<header>
+				<h1>Pianocktail</h1>
+				<nav>
+					<ul>
+						<li>
+							<a style="color: #760001; border-bottom: 3px solid #760001;" href="/" >Main</a>
+						</li>
+						<li>
+							<a href="/config">Config</a>
+						</li>
+						<li>
+							<a href="/pumps">Pumps</a>
+						</li>
+						<li>
+							<a href="/recipes">Recipes</a>
+						</li>
+						<li>
+							<a href="/analyse">Analyse</a>
+						</li>
+					</ul>
+				</nav>
+			</header>
+			<div id=command_panel>
+				<!-- classic post version -->
+				<!-- <img id="record" onclick="buttonclick(1)" border="0" src="pictures/rec.png" width="120" height="116" />
+				<form id="postrecord" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="record" />
+				</form>
+				<img id="stop" onclick="buttonclick(0)" border="0" src="pictures/stop.png" width="120" height="116" />
+				<form id="poststop" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="stop" />
+				</form>
+				<img id="play" onclick="buttonclick(2)" border="0" src="pictures/play.png" width="120" height="116" />
+				<form id="postplay" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="play" />
+				</form>
+				<img id="analyse" onclick="buttonclick(3)" border="0" src="pictures/cocktail.png" width="120" height="116" />
+				<form id="postanalyse" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="cocktail" />
+				</form>
+				<img id="cancel" onclick="buttonclick(4)" border="0" src="pictures/cancel.png" width="120" height="116" />
+				<form id="postcancel" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="cancel" />
+				</form>
+				<img id="panic" onclick="buttonclick(5)" border="0" src="pictures/panic.png" width="120" height="116" />
+				<form id="postpanic" method="post" action="/" style="display:none;">
+				<input type="hidden" name="@client" value="web" />
+				<input type="hidden" name="@action" value="panic" />
+				</form>
+				-->
+				<!-- websocket and canvas version -->
+				<section>
+					<canvas id="control_panel" width="600px" height="300px"></canvas>
+					<aside>
+						<div id="command_buttons">
+							<button id=0 type="button" onclick="buttonclick(0)" ontouchstart="buttonclick(0)">
+								Stop
+							</button>
+							<button id=1 type="button" onclick="buttonclick(1)">
+								Record
+							</button>
+							<button id=2 type="button" onclick="buttonclick(2)">
+								Play
+							</button>
+							<button id=3 type="button" onclick="buttonclick(3)">
+								Cocktail
+							</button>
+							<button id=4 type="button" onclick="buttonclick(4)">
+								Panic!
+							</button>
+							<a href="notes.pckt" target="_BLANK">
+							<button id=5 type="button">
+								Export Notes
+							</button> </a>
+						</div>
+					</aside>
+					<canvas id="piano_keyboard" width="800px" height="120px"></canvas>
+				</section>
+			</div>
+			<footer>
+				<p>
+					&copy; Copyright  by Bertrand Verdu
+				</p>
+			</footer>
+		</div>
+	</body>
+</html>

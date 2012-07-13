@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>Pianocktail Config</title>
+		<meta name="description" content="" />
+		<meta name="author" content="Bertrand Verdu" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.png" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<script type="text/javascript">
+			var port = parseInt(window.location.port);
+			var hostname = window.location.hostname;
+			var Uri = "http://" + hostname + ":" + port + "/";
+			var output;
+			var changelist = {};
+			function writeToScreen(message) {
+				var pre = document.createElement("p");
+				pre.style.wordWrap = "break-word";
+				pre.innerHTML = message;
+				output.appendChild(pre);
+			}
+			function setData(moddata) {
+				console.log(moddata);
+				if (moddata == "alc"|moddata == "debug"){
+					changelist[moddata] = Math.abs(changelist[moddata]-1);
+				}
+				else{
+					changelist[moddata] = document.getElementById(moddata).value;
+				}
+				console.log(changelist[moddata]);
+			}
+
+			function getConf() {
+				req = new XMLHttpRequest();
+				params = 'client=web&action=config&command=getconf';
+				req.onreadystatechange = function() {
+					if((req.readyState == 4) && (req.status == 200)) {
+						var data = eval("(" + req.responseText + ")");
+						sets = document.getElementById("configparams");
+						childs = sets.childNodes;
+						z = childs.length
+						for(var y = 0; y < z; y++) {
+							sets.removeChild(childs[0]);
+						}
+						lab5 = document.createElement("label");
+						lab5.for = "debug";
+						lab5.innerHTML = "Debug";
+						sets.appendChild(lab5);
+						var dbg = document.createElement("input");
+						dbg.id = "debug";
+						dbg.type = "checkbox";
+						dbg.value = data.debug;
+						dbg.setAttribute("onClick","setData(\"debug\")");
+						if (data.debug == 1){
+							changelist['debug'] = 1;
+							dbg.checked = "True";
+						}
+						else{
+							changelist['debug']=0;
+						}
+						sets.appendChild(dbg);
+						lab0 = document.createElement("label");
+						lab0.for = "alc";
+						lab0.innerHTML = "Alcool ?";
+						sets.appendChild(lab0);
+						var alc = document.createElement("input");
+						alc.id = "alc";
+						alc.type = "checkbox";
+						alc.value = data.alc;
+						alc.setAttribute("onClick","setData(\"alc\")");
+						if (data.alc == 1){
+							changelist['alc'] = 1;
+							alc.checked = "True";
+						}
+						else{
+							changelist['alc']=0;
+						}
+						sets.appendChild(alc);
+						lab1 = document.createElement("label");
+						lab1.for = "dep";
+						lab1.innerHTML = "Pump offset :";
+						sets.appendChild(lab1);
+						var dep = document.createElement("input");
+						dep.id = "dep";
+						dep.type = "number";
+						dep.size = "3";
+						dep.step = "1";
+						dep.value = data.dep;
+						dep.setAttribute("onBlur","setData(\"dep\")");
+						sets.appendChild(dep);
+						lab2 = document.createElement("label");
+						lab2.for = "complex";
+						lab2.innerHTML = "Complexity index :";
+						sets.appendChild(lab2);
+						var complex = document.createElement("input");
+						complex.id = "complexind";
+						complex.type = "number";
+						complex.size = "3";
+						complex.step = "0.1";
+						complex.value = data.complexind;
+						complex.setAttribute("onBlur","setData(\"complexind\")");
+						sets.appendChild(complex);
+						lab3 = document.createElement("label");
+						lab3.for = "tristesse";
+						lab3.innerHTML = "Sadness index :";
+						sets.appendChild(lab3);
+						var tristesse = document.createElement("input");
+						tristesse.id = "tristind"
+						tristesse.type = "number";
+						tristesse.size = "3";
+						tristesse.step = "0.1";
+						tristesse.value = data.tristind;
+						tristesse.setAttribute("onBlur","setData(\"tristind\")");
+						sets.appendChild(tristesse);
+						lab4 = document.createElement("label");
+						lab4.for = "nervous";
+						lab4.innerHTML = "Nervosity index :";
+						sets.appendChild(lab4);
+						var nervous = document.createElement("input");
+						nervous.id = "nervind";
+						nervous.type = "number";
+						nervous.size = "3";
+						nervous.step = "0.1";
+						nervous.value = data.nervind;
+						nervous.setAttribute("onBlur","setData(\"nervind\")");
+						sets.appendChild(nervous);
+						listIn = document.getElementById("midiInList");
+						listIn.options.length = 0;
+						for(var i = 0; i < data.inports.length; i++) {
+							var message = data.inports[i][0] + " " + data.inports[i][1] + " " + data.inports[i][2];
+							var pre = document.createElement("option");
+							pre.value = i
+							pre.innerHTML = message;
+							listIn.appendChild(pre)
+						}
+						listOut = document.getElementById("midiOutList");
+						listOut.options.length = 0;
+						for(var i = 0; i < data.outports.length; i++) {
+							var message = data.outports[i][0] + " " + data.outports[i][1] + " " + data.outports[i][2];
+							var pre = document.createElement("option");
+							pre.value = i
+							pre.innerHTML = message;
+							listOut.appendChild(pre)
+						}
+					}
+
+				};
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params)
+			};
+			function setConf() {
+				req = new XMLHttpRequest();
+				parms = {};
+				parms.client = "web";
+				parms.action = "config";
+				parms.command = "setconf";
+				parms.params = changelist;
+				req.onreadystatechange = function() {
+					if((req.readyState == 4) && (req.status == 200)) {
+						var data = eval("(" + req.responseText + ")");
+						if(data.updated == "1") {
+							console.log("update = OK");
+							getConf();
+						}
+					}
+
+				};
+				params = JSON.stringify(parms);
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/json");
+				req.setRequestHeader("Content-length", params.length);
+				console.log(parms);
+				req.send(params);
+			};
+		</script>
+	</head>
+	<body onload="getConf()">
+		<div id="page">
+			<header>
+				<h1>Pianocktail</h1>
+				<nav>
+					<ul>
+						<li>
+							<a href="/">Main</a>
+						</li>
+						<li>
+							<a style="color: #760001; border-bottom: 3px solid #760001;" href="/config">Config</a>
+						</li>
+						<li>
+							<a href="/pumps">Pumps</a>
+						</li>
+						<li>
+							<a href="/recipes">Recipes</a>
+						</li>
+						<li>
+							<a href="/analyse">Analyse</a>
+						</li>
+					</ul>
+				</nav>
+			</header>
+			<div id="command_bar">
+				<div>
+					Config
+				</div>
+				<div id="btgroup" style="margin-left: 450px">
+					<div id="chgbuttons">
+						<button type="Undo" onclick="getConf()">
+							Undo
+						</button>
+						<button type="submit" onclick="setConf()">
+							Apply
+						</button>
+					</div>
+				</div>
+			</div>
+			<canvas id="midiCanvas" width="1000px" height="200px"></canvas>
+			<div id="midiConnect">
+				<div class="midiselect">
+					<select id="midiInList" size=10 ></select>
+					<select id="midiOutList" size=10 ></select>
+				</div>
+			</div>
+			<form id="configparams" action="none">
+			</form>
+			<footer>
+				<p>
+					&copy; Copyright  by Bertrand Verdu
+				</p>
+			</footer>
+		</div>
+	</body>
+</html>

@@ -1,0 +1,5 @@
+#!/usr/bin/python2
+# EASY-INSTALL-SCRIPT: 'Twisted==12.0.0','twistd'
+__requires__ = 'Twisted==12.0.0'
+import pkg_resources
+pkg_resources.run_script('Twisted==12.0.0', 'twistd')

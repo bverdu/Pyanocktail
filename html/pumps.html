@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>Pianocktail Pumps</title>
+		<meta name="description" content="" />
+		<meta name="author" content="Bertrand Verdu" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.png" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<script type="text/javascript">
+			var centi = 0// initialise les centièmes de sec
+			var port = parseInt(window.location.port);
+			var hostname = window.location.hostname;
+			var Uri = "http://" + hostname + ":" + port + "/";
+			var output;
+			var running = 0;
+			var tim;
+			var chrono;
+			var updatedrows = []
+
+			function switchEditButtons(enable) {
+				if(enable == 0) {
+					chbut = document.getElementById("chgbuttons").getElementsByTagName("button");
+					for(var i = 0; i < chbut.length; i++) {
+						chbut[i].setAttribute("disabled", "1");
+					}
+				} else {
+					chbut = document.getElementById("chgbuttons").getElementsByTagName("button");
+					for(var i = 0; i < chbut.length; i++) {
+						chbut[i].removeAttribute("disabled");
+					}
+				}
+
+			}
+
+			function chronometer() {
+				centi = centi + 100;
+				//incrémentation des centièmes de seconde
+				chrono.innerHTML = centi;
+				tim = setTimeout('chronometer()', 100);
+			}
+
+			function startchrono(pump) {//fonction qui remet les compteurs à 0
+				chrono = document.getElementById("chrono");
+				running = 1;
+				centi = 0;
+				req = new XMLHttpRequest();
+				params = 'client=web&action=pump&command=b' + pump;
+				req.onreadystatechange = function() {
+					console.log(req.responseText)
+					if((req.readyState == 4) && (req.status == 200)) {
+						if(req.responseText == '0') {
+							chronometer();
+						}
+					}
+				}
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params);
+			}
+
+			function stopchrono(row) {
+				lin = document.getElementById(row);
+				var pump = lin.getElementsByTagName("div")[2].innerHTML;
+				if(running == 1) {
+					req = new XMLHttpRequest();
+					params = 'client=web&action=pump&command=s' + pump;
+					req.onreadystatechange = function() {
+						console.log(req.responseText)
+						if((req.readyState == 4) && (req.status == 200)) {
+							if(req.responseText == '0') {
+								clearTimeout(tim);
+								running = 0;
+							}
+						}
+					}
+					req.open('POST', Uri);
+					req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+					req.setRequestHeader("Content-length", params.length);
+					req.send(params);
+				} else {
+					startchrono(pump);
+				}
+
+			}
+
+			function saveRow(row) {
+				lin = document.getElementById(row);
+				cells = lin.getElementsByTagName("div");
+				cells[3].innerHTML = document.getElementById("chrono").innerHTML;
+				if(updatedrows.indexOf(row) == -1) {
+					//console.log(row)
+					updatedrows.push(row);
+					switchEditButtons(1);
+				}
+
+			}
+
+			function writeToScreen(message) {
+				var pre = document.createElement("p");
+				pre.style.wordWrap = "break-word";
+				pre.innerHTML = message;
+				output.appendChild(pre);
+			}
+
+			function setRow(num) {
+				lin = document.getElementById("r" + num);
+				req = new XMLHttpRequest();
+				params = '@client=web&@action=config&@command=setpumps(' + jsondata + ')';
+			}
+
+			function changedCell(row) {
+				console.log("kikouu");
+				if(updatedrows.indexOf(row) == -1) {
+					console.log(row);
+					updatedrows.push(row);
+					switchEditButtons(1);
+				}
+			}
+
+			function getPumps() {
+				var lists = ["alcools"]
+				var alclist = []
+				req = new XMLHttpRequest();
+				params = 'client=web&action=config&command=getpumps';
+				req.onreadystatechange = function() {
+					/*console.log(req.responseText)*/
+					if((req.readyState == 4) && (req.status == 200)) {
+						updatedrows = []
+						var data = eval("(" + req.responseText + ")");
+						var alcool = document.getElementById("alcools");
+						tabbody = document.getElementById("pumps");
+						childs = tabbody.childNodes;
+						z = childs.length
+						for(var y = 0; y < z; y++) {
+							tabbody.removeChild(childs[0]);
+						}
+						for(var i = 0; i < data.pumps.length; i++) {
+							if(data.pumps[i].name != 'EMPTY') {
+								with(data.pumps[i]) {
+									newLine(name, deg, pump, time)
+								}
+							}
+
+						}
+						for(var k = 0; k < alclist.length; k++) {
+							var opt = document.createElement("option");
+							opt.value = alclist[k];
+							console.log(opt.value)
+							alcool.appendChild(opt);
+						}
+
+					}
+					switchEditButtons(0);
+
+				};
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params);
+			};
+
+			function postChanges() {
+				var updated = []
+				for(var i = 0; i < updatedrows.length; i++) {
+					key = updatedrows[i];
+					console.log(key);
+					rw = document.getElementById(key).getElementsByTagName("div");
+					name = rw[0].innerHTML;
+					console.log(name);
+					if(name != undefined) {
+						updrow = {};
+						updrow.name = name;
+						updrow.deg = rw[1].innerHTML;
+						updrow.pump = rw[2].innerHTML;
+						updrow.time = rw[3].innerHTML;
+						updated.push(updrow);
+					}
+				}
+				req = new XMLHttpRequest();
+				parms = {};
+				parms.client = "web";
+				parms.action = "config";
+				parms.command = "setpumps";
+				if(updated.length > 0) {
+					parms.params = updated;
+				} else {
+					parms.params = "0"
+				}
+				req.onreadystatechange = function() {
+					if((req.readyState == 4) && (req.status == 200)) {
+						var data = eval("(" + req.responseText + ")");
+						if(data.updated == "1") {
+							console.log("update = OK");
+							getPumps();
+						}
+					}
+
+				};
+				params = JSON.stringify(parms);
+				console.log(parms);
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/json");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params);
+			};
+
+			function newLine(name, deg, pump, tim) {
+				tabbody = document.getElementById("pumps");
+				childs = tabbody.getElementsByTagName("tr");
+				z = "r" + childs.length;
+				row = document.createElement("tr");
+				row.setAttribute("id", z)
+				cell = document.createElement("td");
+				ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(name == undefined) {
+					txt = document.createTextNode("New");
+				} else {
+					txt = document.createTextNode(name);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(deg == undefined) {
+					txt = document.createTextNode("0");
+				} else {
+					txt = document.createTextNode(deg);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(pump == undefined) {
+					txt = document.createTextNode("999");
+				} else {
+					txt = document.createTextNode(pump);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(tim == undefined) {
+					txt = document.createTextNode("0");
+				} else {
+					txt = document.createTextNode(tim);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				cell.setAttribute("contenteditable", false);
+				var btn = document.createElement("button");
+				btn.setAttribute("onClick", "stopchrono(\"".concat(z + "\")"));
+				txt = document.createTextNode("Start/Stop");
+				btn.appendChild(txt);
+				cell.appendChild(btn);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				cell.setAttribute("contenteditable", false);
+				var btn = document.createElement("button");
+				btn.setAttribute("onClick", "saveRow(\"".concat(z + "\")"));
+				txt = document.createTextNode("Save");
+				btn.appendChild(txt);
+				cell.appendChild(btn);
+				row.appendChild(cell);
+				tabbody.appendChild(row);
+			};
+		</script>
+	</head>
+	<body onload="getPumps()">
+		<div id="page">
+			<header>
+				<h1>Pianocktail</h1>
+				<nav>
+					<ul>
+						<li>
+							<a href="/">Main</a>
+						</li>
+						<li>
+							<a href="/config">Config</a>
+						</li>
+						<li>
+							<a style="color: #760001; border-bottom: 3px solid #760001;" href="/pumps">Pumps</a>
+						</li>
+						<li>
+							<a href="/recipes">Recipes</a>
+						</li>
+						<li>
+							<a href="/analyse">Analyse</a>
+						</li>
+					</ul>
+				</nav>
+			</header>
+			<form>
+				<datalist id="alcools"></datalist>
+			</form>
+			<div id="command_bar">
+				<div>
+					Pumps Settings
+				</div>
+				<div id="btgroup">
+					<button type="submit" onclick="newLine()">
+						New
+					</button>
+					<div id="chgbuttons">
+						<button type="Undo" onclick="getPumps()">
+							Undo
+						</button>
+						<button type="submit" onclick="postChanges()">
+							Apply
+						</button>
+					</div>
+					<div id="chrono">
+						0
+					</div>
+				</div>
+			</div>
+			<table id="tablepumps">
+				<thead>
+					<!--<tr>
+					<th>Pump</th>
+					<th>Name</th>
+					<th>Deg</th>
+					<th>Sugar</th>
+					<th>Opacity</th>
+					<th>Color</th>
+					<th>Fluidity</th>
+					<th>Fizz</th>
+					<th>Duration</th>
+					<th>Test</th>
+					<th>Save</th>-
+					</tr>-->
+					<tr>
+						<th>Name</th>
+						<th>Deg</th>
+						<th>Pump</th>
+						<th>Duration</th>
+						<th>Test</th>
+						<th>Save</th>
+					</tr>
+				</thead>
+				<tbody id="pumps" contenteditable=true></tbody>
+				<tfoot>
+					<tr>
+						<th>Name</th>
+						<th>Deg</th>
+						<th>Pump</th>
+						<th>Duration</th>
+						<th>Test</th>
+						<th>Save</th>
+					</tr>
+				</tfoot>
+			</table>
+			<footer>
+				<p>
+					&copy; Copyright  by Bertrand Verdu
+				</p>
+			</footer>
+		</div>
+	</body>
+</html>

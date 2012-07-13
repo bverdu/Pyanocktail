@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<!-- Always force latest IE rendering engine (even in intranet) & Chrome Frame
+		Remove this if you use the .htaccess -->
+		<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+		<title>Pianocktail Recettes</title>
+		<meta name="description" content="" />
+		<meta name="author" content="Bertrand Verdu" />
+		<meta name="viewport" content="width=device-width; initial-scale=1.0" />
+		<!-- Replace favicon.ico & apple-touch-icon.png in the root of your domain and delete these references -->
+		<link rel="shortcut icon" href="/favicon.png" />
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<script type="text/javascript">
+			var port = parseInt(window.location.port);
+			var hostname = window.location.hostname;
+			var Uri = "http://" + hostname + ":" + port + "/";
+			var output;
+			var updatedrows = [];
+			var deleted = [];
+
+			function switchEditButtons(enable) {
+				if(enable == 0) {
+					chbut = document.getElementById("chgbuttons").getElementsByTagName("button");
+					for(var i = 0; i < chbut.length; i++) {
+						chbut[i].setAttribute("disabled", "1");
+					}
+				} else {
+					chbut = document.getElementById("chgbuttons").getElementsByTagName("button");
+					for(var i = 0; i < chbut.length; i++) {
+						chbut[i].removeAttribute("disabled");
+					}
+				}
+
+			}
+
+			function changedCell(row) {
+				console.log("kikouu");
+				if(updatedrows.indexOf(row) == -1) {
+					console.log(row);
+					updatedrows.push(row);
+					switchEditButtons(1);
+				}
+			}
+
+			function delRow(row, name) {
+				if(updatedrows.indexOf(row) == -1) {
+					tabbody = document.getElementById("recipes");
+					tabbody.removeChild(tabbody.childNodes[row]);
+					deleted.push(name);
+					switchEditButtons(1);
+				}
+
+			}
+
+			function saveRow(num) {
+				/*lin = document.getElementbyId("r" + num)*/
+				req = new XMLHttpRequest();
+				params = '@client=web&@action=config&@command=setpumps(' + jsondata + ')';
+			}
+
+			function postChanges() {
+				if(updatedrows.length > 0) {
+					var updated = []
+					for(var i = 0; i < updatedrows.length; i++) {
+						key = updatedrows[i];
+						console.log(key);
+						rw = document.getElementById(key).getElementsByTagName("div");
+						name = rw[0].innerHTML;
+						console.log(name);
+						console.log(rw.length);
+						if(name != undefined) {
+							updrow = {};
+							updrow.name = name;
+							updrow.qte1 = rw[2].innerHTML;
+							updrow.ing1 = rw[3].innerHTML;
+							updrow.qte2 = rw[4].innerHTML;
+							updrow.ing2 = rw[5].innerHTML;
+							updrow.qte3 = rw[6].innerHTML;
+							updrow.ing3 = rw[7].innerHTML;
+							updrow.qte4 = rw[8].innerHTML;
+							updrow.ing4 = rw[9].innerHTML;
+							updrow.qte5 = rw[10].innerHTML;
+							updrow.ing5 = rw[11].innerHTML;
+							updrow.qte6 = rw[12].innerHTML;
+							updrow.ing6 = rw[13].innerHTML;
+							updrow.tristesse = rw[14].innerHTML;
+							updrow.nerf = rw[16].innerHTML;
+							updated.push(updrow);
+						}
+					}
+					req = new XMLHttpRequest();
+					parms = {};
+					parms.client = "web";
+					parms.action = "config";
+					parms.command = "setrecipes";
+					parms.params = updated;
+					req.onreadystatechange = function() {
+						if((req.readyState == 4) && (req.status == 200)) {
+							var data = eval("(" + req.responseText + ")");
+							if(data.updated == "1") {
+								console.log("update = OK");
+								getRecipes();
+							}
+						}
+
+					};
+					params = JSON.stringify(parms);
+					console.log(parms);
+					req.open('POST', Uri);
+					req.setRequestHeader("Content-type", "application/json");
+					req.setRequestHeader("Content-length", params.length);
+					req.send(params);
+				}
+				if(deleted.length > 0) {
+					req = new XMLHttpRequest();
+					parms = {};
+					parms.client = "web";
+					parms.action = "config";
+					parms.command = "delrecipes";
+					parms.params = deleted;
+					req.onreadystatechange = function() {
+						if((req.readyState == 4) && (req.status == 200)) {
+							var data = eval("(" + req.responseText + ")");
+							if(data.updated == "1") {
+								console.log("update = OK");
+								getRecipes();
+							}
+						}
+
+					};
+					params = JSON.stringify(parms);
+					console.log(parms);
+					req.open('POST', Uri);
+					req.setRequestHeader("Content-type", "application/json");
+					req.setRequestHeader("Content-length", params.length);
+					req.send(params);
+				}
+
+			};
+
+			function getRecipes() {
+				req = new XMLHttpRequest();
+				params = 'client=web&action=config&command=getrecipes';
+				req.onreadystatechange = function() {
+					/*console.log(req.responseText)*/
+					if((req.readyState == 4) && (req.status == 200)) {
+						var data = eval("(" + req.responseText + ")");
+						tabbody = document.getElementById("recipes");
+						childs = tabbody.childNodes;
+						z = childs.length
+						for(var y = 0; y < z; y++) {
+							tabbody.removeChild(childs[0]);
+						}
+						deleted = [];
+						updatedrows = [];
+						for(var i = 0; i < data.recipes.length; i++) {
+							with(data.recipes[i]) {
+								var alc = "No";
+								if(alcool == 1) {
+									var alc = "Yes";
+								}
+								ing = [qte1, ing1, qte2, ing2, qte3, ing3, qte4, ing4, qte5, ing5, qte6, ing6];
+								newLine(name, alc, ing, tristesse, complex, nerf);
+							}
+						}
+					}
+					switchEditButtons(0);
+				};
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params);
+			};
+			function newLine(name, alc, ing, sad, comp, nerv) {
+				tabbody = document.getElementById("recipes");
+				childs = tabbody.getElementsByTagName("tr");
+				z = "r" + childs.length;
+				y = childs.length;
+				row = document.createElement("tr");
+				row.setAttribute("id", z)
+				cell = document.createElement("td");
+				ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(name == undefined) {
+					txt = document.createTextNode("New");
+				} else {
+					txt = document.createTextNode(name);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("contenteditable", false);
+				if(alc == undefined) {
+					txt = document.createTextNode("N/A");
+				} else {
+					txt = document.createTextNode(alc);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				for(var i = 0; i < 12; i++) {
+					var cell = document.createElement("td");
+					var ipt = document.createElement("div");
+					ipt.setAttribute("tabindex", "0");
+					ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+					if(ing == undefined) {
+						if(i / 2 == Math.round(i / 2)) {
+							txt = document.createTextNode("0");
+						} else {
+							txt = document.createTextNode("/");
+						}
+					} else {
+						txt = document.createTextNode(ing[i]);
+					}
+					ipt.appendChild(txt);
+					cell.appendChild(ipt);
+					row.appendChild(cell);
+				}
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(sad == undefined) {
+					txt = document.createTextNode("0");
+				} else {
+					txt = document.createTextNode(sad);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("contenteditable", false);
+				if(comp == undefined) {
+					txt = document.createTextNode("N/A");
+				} else {
+					txt = document.createTextNode(comp);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				var ipt = document.createElement("div");
+				ipt.setAttribute("tabindex", "0");
+				ipt.setAttribute("onBlur", "changedCell(\"".concat(z + "\")"));
+				if(nerv == undefined) {
+					txt = document.createTextNode("0");
+				} else {
+					txt = document.createTextNode(nerv);
+				}
+				ipt.appendChild(txt);
+				cell.appendChild(ipt);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				cell.setAttribute("contenteditable", false);
+				var btn = document.createElement("button");
+				btn.setAttribute("onClick", "delRow(\"".concat(y + "\",\"" + name + "\")"));
+				txt = document.createTextNode("X");
+				btn.appendChild(txt);
+				cell.appendChild(btn);
+				row.appendChild(cell);
+				tabbody.appendChild(row);
+			};
+		</script>
+	</head>
+	<body onload="getRecipes()">
+		<div id="page">
+			<header>
+				<h1>Pianocktail</h1>
+				<nav>
+					<ul>
+						<li>
+							<a href="/">Main</a>
+						</li>
+						<li>
+							<a href="/config">Config</a>
+						</li>
+						<li>
+							<a href="/pumps">Pumps</a>
+						</li>
+						<li>
+							<a style="color: #760001; border-bottom: 3px solid #760001;" href="/recipes">Recipes</a>
+						</li>
+						<li>
+							<a href="/analyse">Analyse</a>
+						</li>
+					</ul>
+				</nav>
+			</header>
+			<div id="command_bar">
+				<div>
+					Cocktails
+				</div>
+				<div id="btgroup" style="margin-left: 450px">
+					<button type="submit" onclick="newLine()">
+						New
+					</button>
+					<div id="chgbuttons">
+						<button type="Undo" onclick="getRecipes()">
+							Undo
+						</button>
+						<button type="submit" onclick="postChanges()">
+							Apply
+						</button>
+					</div>
+				</div>
+			</div>
+			<table id="tablerecipes">
+				<thead>
+					<tr>
+						<th>Name</th>
+						<th>Alc</th>
+						<th>Qty 1</th>
+						<th>Ing 1</th>
+						<th>Qty 2</th>
+						<th>Ing 2</th>
+						<th>Qty 3</th>
+						<th>Ing 3</th>
+						<th>Qty 4</th>
+						<th>Ing 4</th>
+						<th>Qty 5</th>
+						<th>Ing 5</th>
+						<th>Qty 6</th>
+						<th>Ing 6</th>
+						<th>Sad</th>
+						<th>Comp</th>
+						<th>Nerv</th>
+					</tr>
+				</thead>
+				<tbody id="recipes" contenteditable=true></tbody>
+				<tfoot>
+					<tr>
+						<th>Name</th>
+						<th>Alc</th>
+						<th>Qty 1</th>
+						<th>Ing 1</th>
+						<th>Qty 2</th>
+						<th>Ing 2</th>
+						<th>Qty 3</th>
+						<th>Ing 3</th>
+						<th>Qty 4</th>
+						<th>Ing 4</th>
+						<th>Qty 5</th>
+						<th>Ing 5</th>
+						<th>Qty 6</th>
+						<th>Ing 6</th>
+						<th>Sad</th>
+						<th>Comp</th>
+						<th>Nerv</th>
+					</tr>
+				</tfoot>
+			</table>
+			<footer>
+				<p>
+					&copy; Copyright  by Bertrand Verdu
+				</p>
+			</footer>
+		</div>
+	</body>
+</html>
+

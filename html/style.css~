@@ -1,0 +1,15 @@
+body 
+{
+	background-color: yellow;
+}
+#page
+{
+  width: 100%;
+}
+header
+{
+	
+	display: inline;
+	background: gold;
+	color: green;
+}

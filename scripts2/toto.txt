@@ -1,0 +1,27 @@
+[?1034h-->[duree,tristesse,Enervement,Complexite,metrique,tonalite,tempo,cocktail] = PIANOCKTAIL('current.pckt')
+-->
+-->exit
+ 
+ cocktail  =
+ 
+ alc01 0 sj4 3 tralala 1    
+ tempo  =
+ 
+    149.35993  
+ tonalite  =
+ 
+    1.  
+ metrique  =
+ 
+    2.  
+ Complexite  =
+ 
+    2.4552166  
+ Enervement  =
+ 
+    50.596443  
+ tristesse  =
+ 
+    15.192022  
+ more ?
+ 

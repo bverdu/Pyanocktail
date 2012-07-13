@@ -1,0 +1,265 @@
+
+/* pyanocktail css file
+ * 
+ */
+@font-face
+{
+	font-family: 'Deftone-Stylus';
+	src: url('fonts/DEFTONE.ttf') format('Truetype');
+}
+body 
+{
+	background-color: gray;
+}
+#page
+{
+  width: 1000px;
+  margin: auto;
+  font-size: 2.2em;
+}
+header
+{
+	position: relative;
+	width: 100%;
+	height: 80px;
+	/*display: inline-block;*/
+	background: black;
+	color: gold;
+	/*font-size: 0.7em;*/
+	border-radius: 10px;
+	box-shadow: 0 0 5px black;
+	z-index: 2;
+}
+header h1
+{
+	font-family: 'Deftone-Stylus';
+	display: inline-block;
+	text-shadow: 2px 2px 4px green;
+	margin-top: 5px;
+	margin-left: 10px;
+}
+#command_bar
+{
+	margin-top: 5px;
+	background-color: #706b64;
+	border-radius:0.2em;
+	box-shadow:0 0 5px black;
+	width: 100%;
+	height: 60px;
+	text-align: center;
+	/*text-align: right;*/
+	z-index: 2;
+}
+#command_bar div
+{
+	display: inline-block;
+	margin-left: 10px;
+}
+#command_bar #btgroup
+{
+	margin-top: 5px;
+	position: relative;
+	margin-left: 200px;
+	margin-right: 10px;
+}
+#command_bar #chrono
+{
+	background-color: grey;
+	height: 45px;
+	width: 100px;
+	border: solid;
+	border-radius: 6px;
+	text-align: center;
+}
+#command_bar button
+{
+	height: 50px;
+	width: 100px;
+}
+nav
+{
+   	/*margin-top:1%;*/
+   	/*position:absolute;*/
+   	margin-left: 180px;
+   	text-align: right;
+    display: inline-block;
+    margin-right: 5px;
+    
+    /*margin-top: 5px;*/
+}
+
+nav ul
+{
+    list-style-type: none;
+}
+
+nav li
+{
+    display: inline;
+    margin-right: 5px;
+}
+
+nav a
+{
+    font-size: 0.7em;
+    color: white;
+    padding-bottom: 3px;
+    text-decoration: none;
+}
+
+nav a:hover
+{
+    color: #760001;
+    border-bottom: 3px solid #760001;
+}
+#control_panel
+{
+	margin-top: 5px;
+	margin-left: 100px;
+	font-size: 1.5em;
+	z-index: 1;
+	
+	
+}
+aside
+{
+    display: inline-block;
+    vertical-align: top;
+    width: 100px;
+   	top: 100px;
+   	margin-left: 84px;
+    background-color: #706b64;
+    box-shadow: 0px 2px 5px #1c1a19;
+    border-radius: 5px;
+    padding: 3px;
+    color: white;
+    font-size: 0.5em;
+    z-index: 2;
+}
+select
+{
+	width : 300px;
+	margin-top: 10px;
+	border-radius: 5px;
+	background-color: #C3C3C3;
+}
+.midiselect
+{
+	overflow : hidden;
+}
+#midiCanvas
+{
+	position: absolute;
+	z-index: 1;
+}
+#midiConnect
+{
+	position: relative;
+	vertical-align: top;
+	text-align: center;
+	z-index: 2;
+}
+#midiOutList
+{
+	margin-left: 150px;
+	
+}
+option
+{
+	margin-top: 10px;
+	margin-left: 20px;
+}
+#configparams
+{
+	font-size: 0.5em;
+	margin-top: 40px;
+	text-align: center;
+}
+#configparams label
+{
+	display: inline-block;
+	margin-left: 10px;
+}
+#command_buttons button
+{
+	width: 100px;
+	height: 50px;
+	/*float: right;*/
+	/*position: fixed;
+	right: 2px;
+	top: 2px;*/
+	
+}
+#piano_keyboard
+{
+	position: relative;
+	margin-left: 100px;
+}
+footer
+{
+	font-size: 0.25em;
+}
+
+table 
+{
+	width: 100%;
+	margin-top: 5px;
+	border-collapse:separate;
+	border-spacing:0px ;
+	border-radius:0.5em;
+	box-shadow:0 0 5px black;
+	padding:5px;
+	font-size: 0.6em;
+	z-index: 1;
+}
+
+table td , table th 
+{
+	border:solid 1px black ;
+	box-shadow:0 0 0 1px black, 0 0 3px black;
+}
+
+
+
+table thead :first-child  :first-child
+{
+	border-radius:0.5em 0 0;
+}
+
+table thead :first-child  :last-child  
+{
+	border-radius:0 0.5em 0 0;
+}
+
+table tfoot :last-child  :first-child
+{
+	border-radius:0 0 0 0.5em ;
+}
+
+table tfoot :last-child  :last-child
+{
+	border-radius:0 0 0.5em ;
+}
+
+/* etc .... */
+
+tfoot :last-child th , thead :first-child th
+{
+	background:white;
+}
+
+table tr th, table tr td
+{
+	padding:5px;
+	text-shadow:1px 1px 1px white;
+	text-align: center;
+}
+table tr td
+{
+	height: 50px;
+}
+table tr td button
+{
+	width: 80px;
+	height: 50px;
+}
