@@ -43,7 +43,7 @@ class MidiService(service.Service):
         if self.debug:
             log.msg("Sequencer created")
             
-    def startService(self):
+    def startService(self,connect=True):
         service.Service.startService(self)
         conf = self.conf
         debug = self.conf.debug
@@ -66,17 +66,17 @@ class MidiService(service.Service):
             log.msg("Sequencer ready")
         
 # Connexion midi automatique
-
         sysports = self.seq.findmidiport()
         conf.sysports = sysports
         sysInport = sysports[0]
         sysOutport = sysports[1]
         if debug:
             log.msg(sysports)
-        if sysInport != (0, 0):
-            self.seq.connect_ports(sysInport, (self.seqId, self.inportId), 0, 0, 1, 1)
-        if sysOutport != (0, 0):
-            self.seq.connect_ports((self.seqId, self.outportId), sysOutport)
+        if connect:
+            if sysInport != (0, 0):
+                self.seq.connect_ports(sysInport, (self.seqId, self.inportId), 0, 0, 1, 1)
+            if sysOutport != (0, 0):
+                self.seq.connect_ports((self.seqId, self.outportId), sysOutport)
     
 # Lancement du thread midi
 
@@ -95,8 +95,8 @@ class MidiService(service.Service):
             thread.stop()
         log.msg("midi thread stopped")
 #        del(self.seq)
-        log.msg("sequencer destroyed")
         service.Service.stopService(self)
+        log.msg("sequencer destroyed")
 
 
     

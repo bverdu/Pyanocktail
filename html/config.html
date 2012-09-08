@@ -130,6 +130,18 @@
 						nervous.value = data.nervind;
 						nervous.setAttribute("onBlur","setData(\"nervind\")");
 						sets.appendChild(nervous);
+						lab5 = document.createElement("label");
+						lab5.for = "factor";
+						lab5.innerHTML = "Qty ratio :";
+						sets.appendChild(lab5);
+						var factor = document.createElement("input");
+						nervous.id = "factor";
+						nervous.type = "number";
+						nervous.size = "3";
+						nervous.step = "0.1";
+						nervous.value = data.factor;
+						nervous.setAttribute("onBlur","setData(\"factor\")");
+						sets.appendChild(nervous);
 						listIn = document.getElementById("midiInList");
 						listIn.options.length = 0;
 						for(var i = 0; i < data.inports.length; i++) {

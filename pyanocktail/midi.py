@@ -3,7 +3,7 @@
 #  This module is the midi controller, running in its own process
 #
 # Bertrand Verdu  08/08
-from pyalsa.alsaseq import Sequencer, SeqEvent, SEQ_TIME_STAMP_REAL, SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_PORT,  SEQ_PORT_TYPE_APPLICATION, SEQ_PORT_TYPE_HARDWARE, SEQ_PORT_CAP_SUBS_WRITE, SEQ_PORT_CAP_WRITE, SEQ_PORT_CAP_SUBS_READ, SEQ_PORT_CAP_READ, SEQ_EVENT_NOTEON, SEQ_EVENT_ECHO, SEQ_EVENT_NOTEOFF
+from pyalsa.alsaseq import Sequencer, SeqEvent, SEQ_TIME_STAMP_REAL, SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_PORT, SEQ_PORT_TYPE_APPLICATION, SEQ_PORT_TYPE_HARDWARE, SEQ_PORT_CAP_SUBS_WRITE, SEQ_PORT_CAP_WRITE, SEQ_PORT_CAP_SUBS_READ, SEQ_PORT_CAP_READ, SEQ_EVENT_NOTEON, SEQ_EVENT_ECHO, SEQ_EVENT_NOTEOFF
 import time
 from multiprocessing import Process
 import os
@@ -24,7 +24,7 @@ def listOutports():
             miditype = pinfo['type']
             caps = pinfo['capability']
             if miditype in (SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_PORT, SEQ_PORT_TYPE_APPLICATION, SEQ_PORT_TYPE_HARDWARE, SEQ_PORT_TYPE_PORT | SEQ_PORT_TYPE_HARDWARE | SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_APPLICATION | SEQ_PORT_TYPE_MIDI_GENERIC) and caps in (SEQ_PORT_CAP_SUBS_WRITE | SEQ_PORT_CAP_WRITE, 127):
-                outports.append([cid,pid,cname])
+                outports.append([cid, pid, cname])
     return outports
 
 def listInports():
@@ -40,12 +40,12 @@ def listInports():
             miditype = pinfo['type']
             caps = pinfo['capability']
             if miditype in (SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_PORT, SEQ_PORT_TYPE_APPLICATION, SEQ_PORT_TYPE_HARDWARE, SEQ_PORT_TYPE_PORT | SEQ_PORT_TYPE_HARDWARE | SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_APPLICATION | SEQ_PORT_TYPE_MIDI_GENERIC) and caps in (SEQ_PORT_CAP_SUBS_READ | SEQ_PORT_CAP_READ, 127):
-                inports.append([cid,pid,cname])
+                inports.append([cid, pid, cname])
     return inports
 
-def savenotestofile(notes,path=notesFile):
+def savenotestofile(notes, path=notesFile):
 
-    dump = open(os.path.join(path,"current.pckt"), 'w+')
+    dump = open(os.path.join(path, "current.pckt"), 'w+')
     for i in range(len(notes)):
         if notes[i][1] == 1:
             dump.write(str(notes[i][0]) + " " + "1" + " " + str(notes[i][2]) + " " + str(notes[i][3]) + "\n")
@@ -82,11 +82,15 @@ class MidiThread(Process):
         status = 'Initialized'
         command = 0
         notes = []
+        notestemp = []
+        bizar = False
+        timestamp = 0.000
+        begin = timestamp
         seq.service(seq.readyled, SEQ_EVENT_NOTEON)
         triggerStop = 0
         event = SeqEvent(SEQ_EVENT_ECHO)
         if debug:
-            print("midi pid for debug: "+str(self.pid)+"\n")
+            print("midi pid for debug: " + str(self.pid) + "\n")
         while self.running:
             try :
                 next_task = self.task_queue.get_nowait()
@@ -95,25 +99,26 @@ class MidiThread(Process):
                 pass
             try:
                 notein = int(self.notein_queue.get_nowait())
-                moment = (time.time() - seq.startime)*1.000
+                moment = (time.time() - seq.startime) * 1.000
                 if save:
                     if notes == []:
                         begin = moment
                     if notein >= 0:
-                        notes.append([(moment - begin)*1000, 1, notein, 64])
+                        notes.append([(moment - begin) * 1000, 1, notein, 64])
 #                        if debug:
 #                            print("note "+str(notein)+" recorded at "+str(moment - begin)+" seconds")
                     else:
-                        notes.append([(moment - begin)*1000.000, 0, abs(notein), 64])
+                        notes.append([(moment - begin) * 1000, 0, abs(notein), 64])
             except: 
                 pass
-            if isinstance(command,int):
+            if isinstance(command, int):
                 if command == 0:
                     try:
                         for event in seq.receive_events(timeout=100, maxevents=4):
-                            if debug:
-                                print(str(event) + " received")
+#                            if debug:
+#                                print(str(event) + " received")
                             if event.is_note_type:
+                                timestamp = (time.time() - seq.startime) * 1.000
                                 note = event.get_data()['note.note']
                                 if note == seq.startevent:
                                     if event.type == SEQ_EVENT_NOTEON:
@@ -149,33 +154,58 @@ class MidiThread(Process):
                                     command = 8
                                 elif save == True:
                                     triggerStop = 0
-                                    if notes == []:
-                                        begin = event.time
-                                    if event.type == SEQ_EVENT_NOTEON:
-    #                                    notes.append([int((timestamp - begin) * 1000.000), 1, note, int(event.get_data()['note.velocity'])])
-                                        notes.append([((event.time - begin)* 1000.000), 1, note, int(event.get_data()['note.velocity'])])
+#                    if debug:
+#                    print(str(notes))
+                                    if notes == [] :
+                                  #     begin = event.time
+                                        begin = (time.time() - seq.startime - 2) * 1.000
+                                        if debug:
+                                            print("first note = " + str(begin))
+                                if event.type == SEQ_EVENT_NOTEON:
+                                    if bizar:
+                                        try:
+                                            key = notestemp.index(note)
+                                            notestemp.remove(note)
+                                            notes.append([((timestamp - begin) * 1000), 0, note, int(event.get_data()['note.velocity'])])
+                                            if debug:
+                                                print("note off = " + str(note))
+                                        except:
+                                            notes.append([((timestamp - begin) * 1000), 1, note, int(event.get_data()['note.velocity'])])
+                                            notestemp.append(note)
+                                            if debug:
+                                                print("note on = " + str(note)) 
+                                    else:
+                                        notes.append([((timestamp - begin) * 1000), 1, note, int(event.get_data()['note.velocity'])])
+                                        #notes.append([((event.time - begin)* 1000.000), 1, note, int(event.get_data()['note.velocity'])])
+                                        if debug:
+                                            print("note on = " + str(note))
                                         if perf:
                                             self.result_queue.put_nowait(str(note))
-                                    else :
-    #                                    notes.append([int((timestamp - begin) * 1000.000), 0, note, int(event.get_data()['note.velocity'])])
-                                        notes.append([((event.time - begin)* 1000.000), 0, note, int(event.get_data()['note.velocity'])])
+                                else :
+                                    if bizar == False:
+                                        notes.append([((timestamp - begin) * 1000), 0, note, int(event.get_data()['note.velocity'])])
+        #                                    notes.append([((event.time - begin)* 1000.000), 0, note, int(event.get_data()['note.velocity'])])
+                                        if debug:
+                                            print("note off: " + str(note))
                                         if perf:
-                                            self.result_queue.put_nowait("-"+str(note))
-                                else:
-                                    triggerStop = 0
+                                            self.result_queue.put_nowait("-" + str(note))
+                                    if event.type == SEQ_EVENT_NOTEOFF:
+                                        print ("note off confirmed: " + str(note))
+                                    else:
+                                        triggerStop = 0
                                                                 
                                
                             elif event.is_control_type:
                                 if save == True:
                                     if notes == []:
                                         begin = event.time
-    #                                notes.append([int((timestamp - begin) * 1000.000), 2, int(event.get_data()['control.param']), int(event.get_data()['control.value'])])
-                                    notes.append([((event.time - begin) * 1000.000), 2, int(event.get_data()['control.param']), int(event.get_data()['control.value'])])
+                                    notes.append([int((timestamp - begin) * 1000.000), 2, int(event.get_data()['control.param']), int(event.get_data()['control.value'])])
+    #                                notes.append([((event.time - begin) * 1000.000), 2, int(event.get_data()['control.param']), int(event.get_data()['control.value'])])
                                     if perf:
                                         self.result_queue.put_nowait(event.get_data()['control.param'])
                     except Exception, err: 
                         
-                        print("midi error: "+err.message)
+                        print("midi error: " + err.message)
         #            
                 elif command == 1:
                     save = True
@@ -185,6 +215,7 @@ class MidiThread(Process):
                     if debug:
                         print "notes purged"
                     notes = []
+                    notestemp = []    
                     analysed = False
     #                begin = timestamp
                     if debug:
@@ -256,7 +287,7 @@ class MidiThread(Process):
                                 analyse = seq.analyse(notes)
                                 if debug:
                                     print "Analyse finished"
-                                    print("alors: "+analyse[1])
+                                    print("alors: " + analyse[1])
                                 status = "Analyse finished"
                                 for line in analyse[1]:
                                     self.result_queue.put(str(line))
@@ -280,7 +311,7 @@ class MidiThread(Process):
                         save = False
                         if len(notes) > 4:
                             print("Analysing and serving...")
-                            status =("Analyse et service en cours")
+                            status = ("Analyse et service en cours")
                             self.status_queue.put(status)
                             analyse = seq.analyse(notes)
                             for line in analyse[1]:
@@ -346,9 +377,11 @@ class MidiThread(Process):
             else:
                 print("string command")
                 if command[0] == 'b':
-                    self.seq.service(self.seq.dep+int(command[1:]),SEQ_EVENT_NOTEON)
+                    self.seq.service(self.seq.dep + int(command[1:]), SEQ_EVENT_NOTEON)
                 elif command[0] == 's':
-                    self.seq.service(self.seq.dep+int(command[1:]),SEQ_EVENT_NOTEOFF)
+                    self.seq.service(self.seq.dep + int(command[1:]), SEQ_EVENT_NOTEOFF)
+                elif command[0] == 't':
+                    self.seq.cocktailyse(self.seq.analyse([],True,command[1:])[0])
                 command = 0
 
     def stop(self):
@@ -357,10 +390,11 @@ class MidiThread(Process):
         
 class sequencer(Sequencer):
     
-    def __init__(self,name,parameters):
+    def __init__(self, name, parameters):
         Sequencer.__init__(self)
         self.clientname = name
         self.dep = parameters['dep']
+        self.pumpfactor = float(parameters['factor'])
         self.alc = parameters['alc']
         self.startevent = parameters['start']
         self.stopevent = parameters['stop']
@@ -405,8 +439,9 @@ class sequencer(Sequencer):
     def connect_ports(self, srcaddr, dstaddr, queue=0, exclusive=0, time_update=0, time_real=0):
         Sequencer.connect_ports(self, srcaddr, dstaddr, queue, exclusive, time_update, time_real)
         self.startime = time.time()
-    def reloadConf(self,parameters):
+    def reloadConf(self, parameters):
         self.dep = parameters['dep']
+        self.pumpfactor = float(parameters['factor'])
         self.alc = parameters['alc']
         self.startevent = parameters['start']
         self.stopevent = parameters['stop']
@@ -449,7 +484,7 @@ class sequencer(Sequencer):
         return self.tabpompes
     def getstatus(self):
         return self.status
-    def setstatus(self,action,cli=False):
+    def setstatus(self, action, cli=False):
         if action == 'close':
             self.command = 9 
             self.status = 'closed'
@@ -458,7 +493,7 @@ class sequencer(Sequencer):
             return self.status
         elif action == 'stop':
             self.command = 2
-        elif action =='play':
+        elif action == 'play':
             self.command = 4
         elif action == 'record':
             self.command = 1
@@ -470,7 +505,7 @@ class sequencer(Sequencer):
             self.command = 4
         else: 
             raise Exception()
-        evt=SeqEvent(SEQ_EVENT_ECHO)
+        evt = SeqEvent(SEQ_EVENT_ECHO)
         evt.dest = (self.client_id, self.inPortId)
         evt.queue = self.commandqueue
         self.output_event(evt)
@@ -481,13 +516,13 @@ class sequencer(Sequencer):
             return self.status
         else:
             return None
-    def putNote(self,note):
+    def putNote(self, note):
         try:
             if note >= 0:
                 put = SeqEvent(SEQ_EVENT_NOTEON)
                 put.dest = (self.client_id, self.inPortId)
                 put.timestamp = SEQ_TIME_STAMP_REAL
-                put.time = (time.time() - self.startime)*1.000
+                put.time = (time.time() - self.startime) * 1.000
                 put.set_data({'note.note' : note, 'note.velocity' : 64})
                 put.queue = self.commandqueue
                 print("output event")
@@ -500,23 +535,23 @@ class sequencer(Sequencer):
                 put = SeqEvent(SEQ_EVENT_NOTEOFF)
                 put.dest = (self.client_id, self.inPortId)
                 put.timestamp = SEQ_TIME_STAMP_REAL
-                put.time = (time.time() - self.startime)*1.000
+                put.time = (time.time() - self.startime) * 1.000
                 put.set_data({'note.note' : abs(note), 'note.velocity' : 64})
                 put.queue = self.commandqueue
                 self.output_event(put)
                 self.drain_output()
 #                self.sync_output_queue()
-        except Exception,err:
+        except Exception, err:
             if self.debug:
-                print("putNote Error: "+err.message)
+                print("putNote Error: " + err.message)
             return "1"
             
     def getcommand(self):
         return self.command
     def setdep(self, dep=0):
         self.dep = dep
-    def analyse(self, notes):
-        savenotestofile(notes,self.scriptpath)
+    def analyse(self, notes, direct=False, cock=''):
+        savenotestofile(notes, self.scriptpath)
 #        analysed = MathEngine()
         analysed = MathEngine(self.scriptpath)
         analysed.debug = self.debug
@@ -524,8 +559,8 @@ class sequencer(Sequencer):
         if self.old:
             analysed.settabpompes(self.tabpompes)
         else:
-            analysed.settabrecipes(self.tabrecipes,self.tabpompesdb)
-        analyse = analysed.solve(self.old,self.complexind,self.tristind,self.nervind,self.alc)
+            analysed.settabrecipes(self.tabrecipes, self.tabpompesdb)
+        analyse = analysed.solve(self.old, self.complexind, self.tristind, self.nervind, self.alc, direct, cock)
         self.status = "analysed"
         if self.debug:
             print "analysed"
@@ -560,18 +595,20 @@ class sequencer(Sequencer):
 #            time.sleep(timer)
 #            self.service(int(self.up) + self.dep, SEQ_EVENT_NOTEOFF)
         for i in range(len(analyse)):
-            if int(float(analyse[i][1])) != 0:
+            print analyse[i]
+            if int(analyse[i][1]) != 0:
                 if self.debug:
                     print "on sert: " + str(analyse[i][0] + self.dep)
                 self.service(analyse[i][0] + self.dep, SEQ_EVENT_NOTEON)
-                time.sleep(float(analyse[i][1]))
+                print("multiply "+str(analyse[i][1])+" by "+str(self.pumpfactor))
+                time.sleep(analyse[i][1]*self.pumpfactor)
                 self.service(analyse[i][0] + self.dep, SEQ_EVENT_NOTEOFF)
                 if self.debug:
                     print str(analyse[i][0] + self.dep) + " servi"
             pass
         if self.debug:
             print str(analyse) + " et servi !"
-        self.status = "served"
+        self.status = "Servi !"
         return self.status
         
     def findmidiport(self):
@@ -588,7 +625,7 @@ class sequencer(Sequencer):
                 miditype = pinfo['type']
                 caps = pinfo['capability']
                 if self.debug:
-                    print(str(pid)+str(cid),pinfo, miditype, caps)
+                    print(str(pid) + str(cid), pinfo, miditype, caps)
                 if miditype in (SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_PORT, SEQ_PORT_TYPE_APPLICATION, SEQ_PORT_TYPE_HARDWARE, SEQ_PORT_TYPE_PORT | SEQ_PORT_TYPE_HARDWARE | SEQ_PORT_TYPE_MIDI_GENERIC, SEQ_PORT_TYPE_APPLICATION | SEQ_PORT_TYPE_MIDI_GENERIC) and caps in (SEQ_PORT_CAP_SUBS_WRITE | SEQ_PORT_CAP_WRITE, 127):
 #                if  caps & (SEQ_PORT_CAP_SUBS_WRITE | SEQ_PORT_CAP_WRITE):
                     if self.debug:

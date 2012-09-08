@@ -56,6 +56,8 @@
 					console.log(req.responseText)
 					if((req.readyState == 4) && (req.status == 200)) {
 						if(req.responseText == '0') {
+							btn = document.getElementById(pump);
+							btn.setAttribute("style","color: red;")
 							chronometer();
 						}
 					}
@@ -77,6 +79,8 @@
 						if((req.readyState == 4) && (req.status == 200)) {
 							if(req.responseText == '0') {
 								clearTimeout(tim);
+								btn = document.getElementById(pump);
+								btn.setAttribute("style","color: black;")
 								running = 0;
 							}
 						}
@@ -269,6 +273,7 @@
 				var cell = document.createElement("td");
 				cell.setAttribute("contenteditable", false);
 				var btn = document.createElement("button");
+				btn.setAttribute("id",pump);
 				btn.setAttribute("onClick", "stopchrono(\"".concat(z + "\")"));
 				txt = document.createTextNode("Start/Stop");
 				btn.appendChild(txt);

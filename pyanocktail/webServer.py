@@ -97,7 +97,7 @@ class MainPage(Resource):
                 else:
                     request.write("bad command")
             elif client == 'web':
-                if action in ('status','close','play','record','reload','cocktail','stop','config','pump'):
+                if action in ('status','close','play','record','reload','cocktail','stop','config','pump','test'):
                     self.task.put(Com[action])
                     if action == 'record':
                         request.write(self.serve(1))
@@ -186,10 +186,10 @@ class MainPage(Resource):
         if command == 'getconf':
             for param in self.conf.list_params :
                 d[param] = getattr(self.conf,param)
-                d['inports'] = listInports()
-                d['outports'] = listOutports()
-                d['connectedin'] = self.conf.sysports[0]
-                d['connectedout'] = self.conf.sysports[1]
+            d['inports'] = listInports()
+            d['outports'] = listOutports()
+            d['connectedin'] = self.conf.sysports[0]
+            d['connectedout'] = self.conf.sysports[1]
         elif command == 'setconf':
             for param in params :
                 log.msg("update = "+str(param)+" value = "+str(params[param]))

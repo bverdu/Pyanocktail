@@ -44,6 +44,17 @@
 					switchEditButtons(1);
 				}
 			}
+			function testRow(row, name){
+				req = new XMLHttpRequest();
+				params = 'client=web&action=pump&command=t' + name;
+				req.onreadystatechange = function() {
+					console.log(req.responseText)
+				}
+				req.open('POST', Uri);
+				req.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+				req.setRequestHeader("Content-length", params.length);
+				req.send(params);
+			}
 
 			function delRow(row, name) {
 				if(updatedrows.indexOf(row) == -1) {
@@ -235,7 +246,7 @@
 				ipt.appendChild(txt);
 				cell.appendChild(ipt);
 				row.appendChild(cell);
-				var cell = document.createElement("td");
+				/*var cell = document.createElement("td");
 				var ipt = document.createElement("div");
 				ipt.setAttribute("tabindex", "0");
 				ipt.setAttribute("contenteditable", false);
@@ -246,7 +257,7 @@
 				}
 				ipt.appendChild(txt);
 				cell.appendChild(ipt);
-				row.appendChild(cell);
+				row.appendChild(cell);*/
 				var cell = document.createElement("td");
 				var ipt = document.createElement("div");
 				ipt.setAttribute("tabindex", "0");
@@ -262,8 +273,18 @@
 				var cell = document.createElement("td");
 				cell.setAttribute("contenteditable", false);
 				var btn = document.createElement("button");
+				btn.setAttribute("style","width: 30px;")
 				btn.setAttribute("onClick", "delRow(\"".concat(y + "\",\"" + name + "\")"));
 				txt = document.createTextNode("X");
+				btn.appendChild(txt);
+				cell.appendChild(btn);
+				row.appendChild(cell);
+				var cell = document.createElement("td");
+				cell.setAttribute("contenteditable", false);
+				var btn = document.createElement("button");
+				btn.setAttribute("style","width: 30px;")
+				btn.setAttribute("onClick", "testRow(\"".concat(y + "\",\"" + name + "\")"));
+				txt = document.createTextNode("T");
 				btn.appendChild(txt);
 				cell.appendChild(btn);
 				row.appendChild(cell);
@@ -331,7 +352,7 @@
 						<th>Qty 6</th>
 						<th>Ing 6</th>
 						<th>Sad</th>
-						<th>Comp</th>
+						<!-- <th>Comp</th> -->
 						<th>Nerv</th>
 					</tr>
 				</thead>
@@ -353,7 +374,7 @@
 						<th>Qty 6</th>
 						<th>Ing 6</th>
 						<th>Sad</th>
-						<th>Comp</th>
+						<!-- <th>Comp</th> -->
 						<th>Nerv</th>
 					</tr>
 				</tfoot>

@@ -25,6 +25,7 @@ class defaultConf:
     stop = 119
     cockt = 118
     panic = 117
+    factor = 1
     reload = 116
     uppump = 0
     sysInport = 0
@@ -46,7 +47,7 @@ class defaultConf:
     dbpwd = 'cocktail'
     theme = "none"
     installdir = "/home/babe/Projets/eclipse/Pyanocktaild/src/"
-    list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','perf','sysInport','sysOutport','alc','complexind','tristind','nervind')
+    list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','perf','sysInport','sysOutport','alc','complexind','tristind','nervind','factor')
     def __init__(self,dirname):
         self.maindb = self.dbconnect()
         self.load(dirname)
@@ -246,6 +247,7 @@ class defaultConf:
         params['compexind'] = self.complexind
         params['tristind'] = self.tristind
         params['nervind'] = self.nervind
+        params['factor'] = self.factor
         return params
                 
 def loadnotesfromfile(filename):

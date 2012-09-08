@@ -38,7 +38,7 @@ def getSeqData(result_queue,status_queue):
 #                del(seq)
             elif status == 'reload':
                 midiservice.stopService(0)
-                midiservice.startService()
+                midiservice.startService(0)
 
         except Exception,err:
 #                pass
