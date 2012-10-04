@@ -109,11 +109,11 @@ class MainPage(Resource):
                         if param :
                             request.write(self.jsonconf(command,param))
                             if self.debug:
-                                log.msg("request processed")
+                                log.msg("request processed param = "+param)
                         else:
                             request.write(self.jsonconf(command))
                             if self.debug:
-                                log.msg("request processed")
+                                log.msg("request processed without parameter")
                     elif action == 'pump':
                         log.msg("coucou")
                         if command :
