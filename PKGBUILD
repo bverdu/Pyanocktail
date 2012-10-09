@@ -8,7 +8,7 @@ url="https://github.com/bverdu/Pyanocktail"
 license=('GPL2')
 depends=('setuptools')
 source=(https://github.com/bverdu/Pyanocktail/blob/master/$pkgname-$pkgver.tar.bz2)
-md5sums=('77b40a0bde4efde95816ed690643d90e')
+md5sums=('241963c5efafcad45902526ee7e82bee')
 
 build() {
     cd "$srcdir"

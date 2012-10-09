@@ -12,6 +12,7 @@ from pyanocktail import pyanocktaild
 class Options(usage.Options):
     try:
         dirname = os.path.expanduser("~/.pianocktail")
+        conffile = open(os.path.join(dirname,"config"), 'r')
     except:
         dirname = "/etc/pianocktail"
     conf = defaultConf(dirname)

@@ -37,7 +37,7 @@ class Dispatcher(Resource):
         self.putChild("style.css", static.File(os.path.join(self.installdir,'html','style.css')))
         self.putChild("fonts", static.File(os.path.join(self.installdir,'html','fonts')))
         self.putChild("scripts", static.File(os.path.join(self.installdir,'html','scripts')))
-        self.putChild("notes.pckt", static.File(os.path.join(os.path.expanduser("~/.pianocktail"),'scripts','current.pckt'),defaultType='application/octet-stream'))
+        self.putChild("notes.pckt", static.File(os.path.join(self.installdir,'scripts','current.pckt'),defaultType='application/octet-stream'))
     def getChild(self, name, request):
         if self.debug:
             log.msg("page demandée: "+str(name))

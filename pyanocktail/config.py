@@ -46,7 +46,7 @@ class defaultConf:
     dbuser = 'piano'
     dbpwd = 'cocktail'
     theme = "none"
-    installdir = "/home/babe/Projets/eclipse/Pyanocktaild/src/"
+    installdir = "/usr/share/pianocktail"
     list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','perf','sysInport','sysOutport','alc','complexind','tristind','nervind','factor')
     def __init__(self,dirname):
         self.maindb = self.dbconnect()
@@ -241,7 +241,7 @@ class defaultConf:
         params['recordlight'] = self.temoin_save
         params['analyselight'] = self.temoin_analyse
         params['perf'] = self.perf
-        params['scriptpath'] = os.path.join(self.installdir,"scripts2")
+        params['scriptpath'] = os.path.join(self.installdir,"scripts")
         params['old'] = self.old 
         params['alc'] = self.alc
         params['compexind'] = self.complexind
