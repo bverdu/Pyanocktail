@@ -408,6 +408,7 @@ class sequencer(Sequencer):
         self.cocktailled = parameters['analyselight']
         self.perf = parameters['perf']
         self.scriptpath = parameters['scriptpath']
+        self.extProgram = parameters['extProgram']
         try:
             if parameters['old'] == 1:
                 self.old = True
@@ -455,6 +456,7 @@ class sequencer(Sequencer):
         self.cocktailled = parameters['analyselight']
         self.perf = parameters['perf']
         self.scriptpath = parameters['scriptpath']
+        self.extProgram = parameters['extProgram']
         try:
             if parameters['old'] == 1:
                 self.old = True
@@ -553,7 +555,7 @@ class sequencer(Sequencer):
     def analyse(self, notes, direct=False, cock=''):
         savenotestofile(notes, self.scriptpath)
 #        analysed = MathEngine()
-        analysed = MathEngine(self.scriptpath)
+        analysed = MathEngine(self.scriptpath,self.extProgram)
         analysed.debug = self.debug
         analysed.alc = self.alc
         if self.old:

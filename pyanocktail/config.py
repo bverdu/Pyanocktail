@@ -47,7 +47,8 @@ class defaultConf:
     dbpwd = 'cocktail'
     theme = "none"
     installdir = "/usr/share/pianocktail"
-    list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','perf','sysInport','sysOutport','alc','complexind','tristind','nervind','factor')
+    extProgram = "scilab"
+    list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','extProgram','perf','sysInport','sysOutport','alc','complexind','tristind','nervind','factor')
     def __init__(self,dirname):
         self.maindb = self.dbconnect()
         self.load(dirname)
@@ -242,6 +243,7 @@ class defaultConf:
         params['analyselight'] = self.temoin_analyse
         params['perf'] = self.perf
         params['scriptpath'] = os.path.join(self.installdir,"scripts")
+        params['extProgram'] = self.extProgram
         params['old'] = self.old 
         params['alc'] = self.alc
         params['compexind'] = self.complexind

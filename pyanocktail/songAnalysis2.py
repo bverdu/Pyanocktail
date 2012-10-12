@@ -18,9 +18,10 @@ tonalite_tab = ['Do Majeur', 'Do# Majeur', 'Ré Majeur', 'Ré# Majeur', 'Mi Maje
 
 class MathEngine(object):
     
-    def __init__(self,scrpath):
+    def __init__(self,scrpath,program):
     
         self.scriptpath = scrpath
+        self.extProgram = program
         self.tabpompes = []
         self.debug = False
     
@@ -72,7 +73,7 @@ class MathEngine(object):
             else:
                 self.sansalcool = False
             self.old = style
-            scilabprocess = Popen(["cd " + self.scriptpath + " && /usr/bin/scicoslab -nwni -nb -f PIANOCKTAIL.sci"], bufsize= -1, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True,close_fds=False)
+            scilabprocess = Popen(["cd " + self.scriptpath + " &&" + self.extProgram + " -nwni -nb -f PIANOCKTAIL.sci"], bufsize= -1, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT, universal_newlines=True,close_fds=False)
             if self.debug:
                 print("process Scilab lance")
             if self.debug:
@@ -300,6 +301,8 @@ class MathEngine(object):
                     if self.debug:
                         print("cocktail found = "+cocktail[0]+" score = "+str(cocktail[1]))
                     qty = 5.000/float((int(cock['qte1'])+int(cock['qte2'])+int(cock['qte3'])+int(cock['qte4'])+int(cock['qte5'])+int(cock['qte6'])))
+                    if qty >= 1.000:
+                        qty = 1.000
                     for ing in self.tabpompesdb:
                         if cock['qte1']> 0:
                             if ing['name'] == cock['ing1']:
