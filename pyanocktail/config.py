@@ -6,15 +6,17 @@
 #                    
 # Bertrand Verdu  08/08
 
-import bsddb3
-import MySQLdb
+# import MySQLdb
+from pyanocktail.dbUtils import initdb
 import os
 import json
 
-class defaultConf:
+class mainConfig:
     
     notes = []
     pumps = []
+    pumpsdb = []
+    recipesdb = []
     cooks = []
     debug = False
     perf = 0
@@ -37,196 +39,71 @@ class defaultConf:
     temoin_analyse = 0
     temoin_error = 0
     httpport = 8888
+    preservice = None
+    postservice = None
     old = 1
     alc = 0
     complexind = 0.5
     tristind = 1
     nervind = 1
+    langage = 'fr'
+    installdir = "/usr/share/pianocktail"
+    #dbtype = 'sqlite'
+    #dbconnectstring= ''
     dbase = 'pianocktail'
     dbuser = 'piano'
     dbpwd = 'cocktail'
     theme = "none"
-    installdir = "/usr/share/pianocktail"
+    dbsession = False
     extProgram = "scilab"
-    list_params = ('debug','dep','up','down','start','stop','cockt','panic','reload','uppump','downpump','statusevt','temoin_save','temoin_ready','temoin_analyse','temoin_error','httpport','theme','installdir','extProgram','perf','sysInport','sysOutport','alc','complexind','tristind','nervind','factor')
-    def __init__(self,dirname):
-        self.maindb = self.dbconnect()
-        self.load(dirname)
+    list_params = ('debug','dep','up','down','start','stop','cockt','panic',
+                   'reload','uppump','downpump','statusevt','temoin_save',
+                   'temoin_ready','temoin_analyse','temoin_error','httpport',
+                   'theme','installdir','extProgram','perf','sysInport',
+                   'sysOutport','alc','complexind','tristind','nervind',
+                   'factor','dbconnectstring','installdir','langage')
+    def __init__(self,dirname,installdir,db=False):
+        self.load(dirname,installdir)
+        if db:
+            self.dbsession = self.dbconnect()
         self.configdir = dirname
     def dbconnect(self):
         try:
-            return MySQLdb.connect(user=self.dbuser,passwd=self.dbpwd,db=self.dbase)
+            dbtype = self.dbtype
+            dbstring = self.dbconnectstring
+        except:
+            dbtype = 'sqlite'
+            dbstring = os.path.join(os.path.abspath(self.installdir),'db','pianocktail.db')
+        try:
+            if dbtype == 'sqlite':
+#                 if os.access(dbstring, os.F_OK) == False:
+#                     f = open(dbstring, 'w')
+#                     f.write()
+#                     f.close()
+                if len(dbstring) > 0:
+                    dbstring = '/'+dbstring
+            return initdb(dbtype+"://"+dbstring, dbtype, self.debug)
         except Exception,err:
-            return False
-            print("mysql connection failed : "+err.message)
-    def refreshdb(self):
-        status = False
-        self.maindb = self.dbconnect()
-        if self.maindb:
-            try:
-                self.pumpsdb,self.downpumpdb,self.uppumpdb = loadPumpsfromdb(self.maindb,self.debug)
-                self.recipesdb = loadRecipesfromdb(self.maindb,self.debug)
-                self.maindb.close()
-                status = True
-            except Exception,err:
-                print("RefreshDB Error: "+err.message)
-        return status
-    def writePumpdb(self,rows):
-        status = False
-        self.maindb = self.dbconnect()
-        if self.maindb:
-            ing = self.maindb.cursor(MySQLdb.cursors.DictCursor)
-            for row in rows:
-                try:
-                    if self.debug:
-                        print("Insert:\n"+row['name']+"\n"+row['deg']+"\n"+row['pump']+"\n"+row['time']+"\n")
-                    write = ing.execute('''INSERT INTO ing 
-                    SET name = %s, deg = %s, pump = %s, time= %s 
-                    ON DUPLICATE KEY UPDATE 
-                    deg = %s, pump = %s, time= %s ''',
-                    (row['name'],row['deg'],row['pump'],row['time']
-                     ,row['deg'],row['pump'],row['time']))
-                    if self.debug:
-                        print(str(write)+"rows wrote\n")
-                    status = True
-                except Exception,err:
-                    print("Insert or Update Error: "+err.message+"\n")
-                    print("Insert or Update Error: "+str(err)+"\n")
-                    status = False
-                    break
-            self.maindb.close()
-        else:
-            status = False
-        if status:
-            return self.refreshdb()
-        else:
-            return False
-    def writeRecipesdb(self,dictrow):
-        status = False
-        self.maindb = self.dbconnect()
-        if self.maindb:
-            ing = self.maindb.cursor(MySQLdb.cursors.DictCursor)
-            for row in dictrow:
-                try:
-                    write = ing.execute('''INSERT INTO cocktail 
-                    SET name = %s, ing1 = %s, qte1 = %s, ing2 = %s, qte2 = %s
-                    , ing3 = %s, qte3 = %s, ing4= %s, qte4= %s, ing5 = %s, qte5 = %s
-                    ,ing6 = %s, qte6 = %s, tristesse = %s, nerf = %s
-                    ON DUPLICATE KEY UPDATE 
-                    ing1 = %s, qte1 = %s, ing2 = %s, qte2 = %s
-                    , ing3 = %s, qte3 = %s, ing4= %s, qte4= %s, ing5 = %s, qte5 = %s
-                    ,ing6 = %s, qte6 = %s, tristesse = %s, nerf = %s ''',
-                    (row['name'], row['ing1'], row['qte1'], row['ing2'], row['qte2'], row['ing3'], 
-                     row['qte3'], row['ing4'], row['qte4'], row['ing5'], row['qte5'], row['ing6'],
-                     row['qte6'], row['tristesse'], row['nerf'], 
-                     row['ing1'], row['qte1'], row['ing2'], row['qte2'], row['ing3'], row['qte3'], 
-                     row['ing4'], row['qte4'], row['ing5'], row['qte5'], row['ing6'], row['qte6'], 
-                     row['tristesse'], row['nerf']))
-                    if self.debug:
-                        print(str(write)+"rows wrote\n")
-                    status = True
-                except Exception,err:
-                    print("Insert or Update Error: "+err.message+"\n")
-                    print("Insert or Update Error: "+str(err)+"\n")
-                    status = False
-                    break
-            self.maindb.close()
-        else:
-            status = False
-        if status:
-            return self.refreshdb()
-        else:
-            return False
-    def delRecipesdb(self,dictkey):
-        status = False
-        self.maindb = self.dbconnect()
-        if self.maindb:
-            ing = self.maindb.cursor(MySQLdb.cursors.DictCursor)
-            for key in dictkey:
-                try:
-                    write = ing.execute('''DELETE FROM cocktail WHERE name = %s''',(key))
-                    if self.debug:
-                        print(str(write)+"rows deleted\n")
-                    status = True
-                except Exception,err:
-                    print("Delete Error: "+err.message+"\n")
-                    print("Delete Error: "+str(err)+"\n")
-                    status = False
-                    break
-            self.maindb.close()
-        else:
-            status = False
-        if status:
-            return self.refreshdb()
-        else:
-            return False
-    def getdebug(self):
-        return self.debug
-        print self.debug
-    def getdep(self):
-        return self.dep
-    def getup(self):
-        return self.up
-    def getdown(self):
-        return self.down
-    def getstart(self):
-        return self.start
-    def getstop(self):
-        return self.stop
-    def getcockt(self):
-        return self.cockt
-    def getpanic(self):
-        return self.panic
-    def getreload(self):
-        return self.reload
-    def getstatusevt(self):
-        return self.statusevt
-    def getrecordled(self):
-        return self.temoin_save
-    def getreadyled(self):
-        return self.temoin_ready
-    def getcocktailled(self):
-        return self.temoin_analyse
-    def geterrorled(self):
-        return self.temoin_error
-    def getpumps(self):
-        return self.pumps
-    def getnotes(self):
-        return self.notes
-    def getcooks(self):
-        return self.cooks
-    def load(self,dirname):
-        notesfile = os.path.join(dirname,"default.pckt")
-        setPumpfile = os.path.join(dirname,"default.pdb")
-        setCookfile = os.path.join(dirname,"default.rdb")
-        configfile = os.path.join(dirname,"config")
+            print("db connection failed : %s" % err)
+    
+    def load(self,confdir,installdir):
+        self.installdir = installdir
+#         notesfile = os.path.join(confdir,'scripts','default.pckt')
+#         setPumpfile = os.path.join(dirname,"default.pdb")
+#         setCookfile = os.path.join(dirname,"default.rdb")
+        configfile = os.path.join(confdir,"config")
         if os.path.exists(configfile):  
             loadconffromfile(self,configfile)
-        if os.path.exists(notesfile):  
-            self.notes = loadnotesfromfile(notesfile)
-        if os.path.exists(setPumpfile):
-            self.pumps,self.downpump,self.uppump = loadPumpsfromfile(setPumpfile,self.debug)  
         else:
-            for i in range(0,32):
-                self.pumps.append(['vide','0','0','0','4','0','0','0.0'])
-        if os.path.exists(setCookfile):
-            self.cooks = loadCooksfromfile(setCookfile)
-        else:
-            self.cooks.append(['vide',['0','sans'],['0','sans'],['0','sans'],['0','sans'],['0','sans'],['0','sans'],['0','sans']])
-        if self.maindb:
-            self.pumpsdb,self.downpumpdb,self.uppumpdb = loadPumpsfromdb(self.maindb,self.debug)
-            self.recipesdb = loadRecipesfromdb(self.maindb,self.debug)
-            self.maindb.close()
+            if os.path.exists(confdir) == False:
+                os.mkdir(confdir)
+            saveConftofile(self,configfile)
             
     def save(self,dirname):
         notesfile = os.path.join(dirname,"default.pckt")
-        setPumpfile = os.path.join(dirname,"default.pdb")
-        setCookfile = os.path.join(dirname,"default.rdb")
         configfile = os.path.join(dirname,"config")
         savenotestofile(self.notes,notesfile)
-        savePumpstofile(self.pumps,setPumpfile)
         saveConftofile(self,configfile)
-        saveCookstofile(self.cooks,setCookfile)
         
     def getseqparameters(self):
         params = dict()
@@ -279,17 +156,23 @@ def loadconffromfile(obj,filename):
     emptyfile = True
     for line in open(filename,'r').readlines():
         try:
-            if str(line.split('=')[1]).rstrip('\n').isdigit() :
+            if line.split('=')[0] in ('preservice','posteservice'):
+                t = []
+                for i in line.split('=')[1].split():
+                    if i != '\n':
+                        t.append(i)
+                setattr(obj,line.split('=')[0],t)
+            elif str(line.split('=')[1]).rstrip('\n').isdigit() :
 #                print("digit!")
                 setattr(obj,line.split('=')[0],int(line.split('=')[1].rstrip('\n')))  
             else:
                 if line.split('=')[0] == "debug":
                     if line.split('=')[1].rstrip('\n') == "False":
                         setattr(obj,'debug',False)
-                        print("debug mode off")
+                        #print("debug mode off")
                     else :
                         setattr(obj,'debug',True)
-                        print("debug mode on")
+                        print("debug mode on") 
                 else:
                     setattr(obj,line.split('=')[0],str(line.split('=')[1]).rstrip('\n'))
             list_params.append(line.split('=')[0])
@@ -324,115 +207,12 @@ def savenotestofile(notes,filename):
     dump.close()
     
 def saveConftofile(obj,filename):
-    f = open(filename,'w+')
+    f = open(filename,'w')
     for param in obj.list_params:
+        #print(str(param))
         f.write(str(param)+"="+str(getattr(obj,param))+"\n")
     f.close()
     
-    
-def loadPumpsfromfile(filename,debug):
-    
-    if debug:
-        print filename
-        
-    filein = bsddb3.rnopen(filename)
-    last, toto = filein.last()
-    tabpumps = []
-    up = 0
-    down = 0
-    for key in range(last):
-        cle,donnee = filein.set_location(key+1)
-        tabpumps.append(donnee.split('%',7))
-        if donnee[0] == 'DOWN':
-            down = cle
-            if debug:
-                print "down = "+str(cle)
-        elif donnee[0] == 'UP':
-            up = cle
-            if debug:
-                print "up = "+str(cle)
-        if debug:
-            print donnee.split('%',7)
-    filein.close()
-#    print(tabpumps)
-    return tabpumps,down,up
-
-def loadPumpsfromdb(db,debug):
-    
-    pumps = db.cursor(MySQLdb.cursors.DictCursor)
-    down = False
-    up = False
-    pumps.execute("""SELECT name, deg, pump, time FROM ing
-          WHERE pump > 0 ORDER by pump""")
-    tabpumps = pumps.fetchall()
-    if debug:
-        print("mysql fetchpump result: "+str(tabpumps)+"\n")
-    for row in tabpumps:
-        if row['name'] == 'UP':
-            up = row['pump']
-            if debug:
-                print("UP = "+str(up)+"\n")
-            if down :
-                break
-        elif row['name'] == 'DOWN':
-            down = row['pump']
-            if debug:
-                print("DOWN = "+str(down)+"\n")
-            if up :
-                break
-    return tabpumps,down,up
-
-
-def savePumpstofile(tabpumps,filename):
-        
-    fileout = bsddb3.rnopen(filename,'n')
-    for key in range(len(tabpumps)):
-        data = ''
-        for i in range(len(tabpumps[key])):
-            if i == 0:
-                data = str(tabpumps[key][i])
-            else:
-                data = data + '%' + str(tabpumps[key][i])
-        fileout[key+1] = data
-    fileout.close()
-    
-    
-def loadCooksfromfile(filename):
-        
-    filein = bsddb3.rnopen(filename)
-    last,toto = filein.last()
-    tabcooks = []
-    global data
-    data = ''
-    for key in range(last):
-        cle,donnee = filein.set_location(key+1)
-        data = donnee.split('%',14)
-        tabcooks.append([data[0],[data[1],data[2]],[data[3],data[4]],[data[5],data[6]],[data[7],data[8]],[data[9],data[10]],[data[11],data[12]],[data[13],data[14]]])
-    filein.close()
-    return tabcooks
-
-def loadRecipesfromdb(db,debug):
-    recipes = db.cursor(MySQLdb.cursors.DictCursor)
-    recipes.execute("""CALL getCocktails;""")
-    tabrecipes = recipes.fetchall()
-    if debug:
-        print("mysql fetchrecipes result: "+str(tabrecipes)+"\n")
-    return tabrecipes
-            
-        
-def saveCookstofile(tabcooks,filename):
-        
-    fileout = bsddb3.rnopen(filename,'n')
-    for cle in range(len(tabcooks)):
-        data = ''
-        for element in range(len(tabcooks[cle])):
-            if element == 0:
-                data = str(tabcooks[cle][element])
-            else:
-                for i in range(len(tabcooks[cle][element])):
-                    data = data + '%' + str(tabcooks[cle][element][i])
-            fileout[cle+1] = data
-        fileout.close()
         
 
 

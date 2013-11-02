@@ -146,5 +146,5 @@ a3=strcat(["Tempo=", string(tempo)," Cocktail=", string(cocktail)]);
 disp(a1);
 disp(a2);
 disp(a3);
-//exit
+exit
 

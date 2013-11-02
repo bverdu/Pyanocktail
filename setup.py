@@ -16,12 +16,6 @@ __author__ = 'Bertrand Verdu'
 
 import sys
 
-try:
-    from twisted.web import websockets
-except ImportError:
-    raise SystemExit("twisted websockets not found.  Make sure you "
-                     "have installed the websockets branch of Twisted core package.")
-
 from distutils.core import setup
 
 def refresh_plugin_cache():
@@ -42,7 +36,7 @@ if __name__ == '__main__':
 
     setup(
         name="Pianocktail",
-        version='0.4',
+        version='0.5',
         description="Pianocktail server.",
         author=__author__,
         author_email="bertrand.verdu@gmail.com",
@@ -52,8 +46,20 @@ if __name__ == '__main__':
             "twisted.plugins",
         ],
         package_data={
-            'twisted': ['plugins/pyanocktail_plugin.py'],
+            'twisted': ['plugins/pyanocktail_plugin.py'],  
         },
+        data_files=[('/usr/share/pianocktail/html', ['html/Pianocktail.html']),
+                    ('/usr/share/pianocktail/html', ['html/config.html']),
+                    ('/usr/share/pianocktail/html', ['html/analyze.html']),
+                    ('/usr/share/pianocktail/html', ['html/pumps.html']),
+                    ('/usr/share/pianocktail/html', ['html/recipes.html']),
+                    ('/usr/share/pianocktail/html', ['html/pianocktail.js']),
+                    ('/usr/share/pianocktail/html', ['html/style.css']),
+                    ('/usr/share/pianocktail/html/fonts', ['html/fonts/DEFTONE.ttf']),
+                  ('/etc/pianocktail', []),
+                  ('/usr/share/pianocktail/db', []),
+                  ('/usr/lib/systemd/system', ['pianocktail.service']),
+                  ('/usr/lib/systemd/system', ['pianocktail.socket'])],
         **extraMeta)
     
     refresh_plugin_cache()

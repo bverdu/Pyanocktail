@@ -1,0 +1,18 @@
+[Unit]
+Description=Pianocktail service
+After=mysqld.service network.target
+Type=forked
+PIDFile=/usr/share/pianocktail/pianocktail.pid
+
+[Service]
+ExecStart=/usr/bin/twistd --nodaemon\
+			 			  --pidfile= \
+			 			  pianocktail --port systemd:domain=INET:index=0
+User=piano
+Group=piano
+NonBlocking=true
+
+
+
+ 
+
