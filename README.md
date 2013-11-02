@@ -5,14 +5,15 @@ Pyanocktail Server
   Here is the software, you just need now a piano, a midi keyboard a Raspberry Pi and some electronic skills to build your own Pianocktail! 
 
   Requirements:
-  	* Python2
-  	* Alsa
-  	* pyalsa
-  	* twisted
-  	* SQLAlchemy
-  	* Autobahn websocket Python
-  	* i2c tools (smbus library)
-  	* scilab
+  
+  	*Python2
+  	*Alsa
+  	*pyalsa
+  	*twisted
+  	*SQLAlchemy
+  	*Autobahn websocket Python
+  	*i2c tools (smbus library)
+  	*scilab
   
   Written by Bertrand Verdu under LGPL2 licence
 
