@@ -399,9 +399,9 @@ class Dispatcher(Resource):
         self.putChild("pumps", 
                       static.File(os.path.join(self.installdir,
                                                'html','pumps.html')))
-        self.putChild("analyse", 
+        self.putChild("analyze", 
                       static.File(os.path.join(self.installdir,
-                                               'html','analyse.html')))
+                                               'html','analyze.html')))
         self.putChild("recipes", 
                       static.File(os.path.join(self.installdir,
                                                'html','recipes.html')))
