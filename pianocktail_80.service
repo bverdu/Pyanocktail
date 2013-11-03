@@ -4,13 +4,12 @@ Description=Pianocktail service
 [Service]
 ExecStart=/usr/bin/twistd --nodaemon\
 			 			  --pidfile= \
-			 			  pianocktail --port 8888
+			 			  pianocktail --port systemd:domain=INET:index=0
 User=piano
 Group=piano
 NonBlocking=true
 
-[Install]
-WantedBy=MultiUser.target
+
 
  
 

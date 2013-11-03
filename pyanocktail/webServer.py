@@ -11,7 +11,8 @@ from twisted.internet import defer,\
                              protocol,\
                              reactor,\
                              threads,\
-                             utils
+                             utils,\
+                             endpoints
 from twisted.web.resource import Resource
 from twisted.web import server, static
 from twisted.python import log, util
@@ -38,6 +39,7 @@ Com['config']=6
 Com['pump']=10
 
 class WebService(internet.TCPServer): #@UndefinedVariable
+# class WebService(endpoints.TCP4ServerEndpoint): #@UndefinedVariable
     '''
     web interface module
     '''    
@@ -72,6 +74,7 @@ class WebService(internet.TCPServer): #@UndefinedVariable
         self.site = server.Site(self.page)
         self.site.protocol = HTTPChannelHixie76Aware
         internet.TCPServer.__init__(self, conf.httpport, self.site)#@UndefinedVariable
+#         endpoints.TCP4ServerEndpoint.__init__(self, conf.httpport, self.site)
         
     def startService(self):
         
@@ -140,10 +143,10 @@ class WebService(internet.TCPServer): #@UndefinedVariable
             if len(cont) > 1:
                 if command[5] == '-':
                     switchcontrol(cont,debug=self.debug)
-                    self.serving = True
+                    self.serving = False
                 else:
                     switchcontrol(cont,on=1,debug=self.debug)
-                    self.serving = False
+                    self.serving = True
             else:
                 log.msg("i2c error: no data found for pump n°:%s"
                         % command[6:])

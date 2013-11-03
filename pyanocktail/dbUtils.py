@@ -243,7 +243,7 @@ def setPumps(session, pump_list):
     
     for row in pump_list:
         if session.query(Pump).filter(Pump.pump == row['pump']).count()==0:
-            if str(row['chan']) == '0':
+            if str(row['bus']) == '-1':
                 continue
             p = Pump(row['pump'],
                        description=row['description'],
