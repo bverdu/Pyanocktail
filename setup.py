@@ -64,7 +64,8 @@ if __name__ == '__main__':
                     ('/etc/pianocktail', []),
                     ('/usr/share/pianocktail/db', []),
                     ('/usr/lib/systemd/system', ['pianocktail.service']),
-                    ('/usr/lib/systemd/system', ['pianocktail.socket'])],
+                    ('/usr/lib/systemd/system', ['pianocktail_80.service']),
+                    ('/usr/lib/systemd/system', ['pianocktail_80.socket'])],
           **extraMeta)
     
     refresh_plugin_cache()
