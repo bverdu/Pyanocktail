@@ -105,7 +105,7 @@ class WebService(internet.TCPServer): #@UndefinedVariable
         if result != None:
             self.analyzed = result
             for line in result['result']:
-                self.wsfactory.sendmessage(line.encode("utf-8"))
+                self.wsfactory.sendmessage(line)
         return int(result['cocktail'])
         
     def set_command(self,command, args=''):

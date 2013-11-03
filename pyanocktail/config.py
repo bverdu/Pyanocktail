@@ -92,13 +92,18 @@ class mainConfig:
 #         notesfile = os.path.join(confdir,'scripts','default.pckt')
 #         setPumpfile = os.path.join(dirname,"default.pdb")
 #         setCookfile = os.path.join(dirname,"default.rdb")
-        configfile = os.path.join(confdir,"config")
-        if os.path.exists(configfile):  
-            loadconffromfile(self,configfile)
-        else:
-            if os.path.exists(confdir) == False:
-                os.mkdir(confdir)
+        try:
+            configfile = os.path.join(confdir,"config")
+            if os.path.exists(configfile):  
+                loadconffromfile(self,configfile)
+            else:
+                if os.path.exists(confdir) == False:
+                    os.mkdir(confdir)
+                saveConftofile(self,configfile)
+        except:
+            configfile = os.path.join(os.path.expanduser("~/.pianocktail"),"config")
             saveConftofile(self,configfile)
+        self.configfile = configfile
             
     def save(self,dirname):
         notesfile = os.path.join(dirname,"default.pckt")

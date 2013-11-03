@@ -6,7 +6,7 @@ Created on 27 oct. 2013
 '''
 import math
 
-tonalite_tab = ['Do Majeur', 'Do# Majeur', 'Ré Majeur', 'Ré# Majeur', 'Mi Majeur', 'Fa Majeur', 'Fa# Majeur', 'Sol Majeur', 'Sol# Majeur', 'La Majeur', 'La# Majeur', 'Si Majeur', 'Do Mineur', 'Do# Mineur', 'Ré Mineur', 'Re# Mineur', 'Mi Mineur', 'Fa Mineur', 'Fa# Mineur', 'Sol Mineur', 'Sol# Mineur', 'La Mineur', 'La# Mineur', 'Si Mineur']
+tonalite_tab = ['Do Majeur', 'Do# Majeur', 'Re Majeur', 'Re# Majeur', 'Mi Majeur', 'Fa Majeur', 'Fa# Majeur', 'Sol Majeur', 'Sol# Majeur', 'La Majeur', 'La# Majeur', 'Si Majeur', 'Do Mineur', 'Do# Mineur', 'Re Mineur', 'Re# Mineur', 'Mi Mineur', 'Fa Mineur', 'Fa# Mineur', 'Sol Mineur', 'Sol# Mineur', 'La Mineur', 'La# Mineur', 'Si Mineur']
 
 def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, debug=True):
     result = {}
@@ -21,33 +21,33 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
             duree = line.split()[0].split('=')[1]
             tristesse = line.split()[1].split('=')[1]
             enervement = line.split()[2].split('=')[1]
-            res.append("Durée du morceau = " + duree + " secondes")
+            res.append("Duree du morceau = " + duree + " secondes")
             res.append('tristesse = '+tristesse)
-            res.append('énervement = '+enervement)
+            res.append('enervement = '+enervement)
             if debug:
-                print("Durée du morceau = " + duree)
+                print("Duree du morceau = " + duree)
             if debug:
                 print("tristesse returned = "+tristesse)
         elif line.startswith(' Complexite'):
             complexite = line.split()[0].split('=')[1]
             metrique = line.split()[1].split('=')[1]
             tonalite = line.split()[2].split('=')[1]
-            res.append('complexité = '+complexite)
+            res.append('complexite = '+complexite)
             if int(metrique.strip('.')) == 2:
-                res.append("Métrique = Binaire")
+                res.append("Metrique = Binaire")
                 if debug:
-                    print("Métrique = Binaire")
+                    print("Metrique = Binaire")
             elif int(metrique.strip('.')) == 3:
-                res.append("Métrique = Ternaire")
+                res.append("Metrique = Ternaire")
                 if debug:
-                    print("Métrique = Ternaire")
+                    print("Metrique = Ternaire")
             else:
-                res.append("Métrique incoherente....")
+                res.append("Metrique incoherente....")
                 if debug:
-                    print("Métrique incoherente....")
-            res.append("Tonalité = "+tonalite_tab[int(tonalite.strip('.'))-1])
+                    print("Metrique incoherente....")
+            res.append("Tonalite = "+tonalite_tab[int(tonalite.strip('.'))-1])
             if debug:
-                print("Tonalité = " +tonalite_tab[int(tonalite[0].strip('.')) - 1])
+                print("Tonalite = " +tonalite_tab[int(tonalite[0].strip('.')) - 1])
         elif line.startswith(' Tempo'):
             tempo = line.split()[0].split('=')[1]
             cock = line.split()[1].split('=')[1:]
@@ -69,7 +69,7 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
 #             print("rrr")
             c[1] = score
             cocktail = recipe['name']
-    res.append(u"Cocktail choisi : "+cocktail)
+    res.append("Cocktail choisi : "+cocktail)
     if debug:
         print("cocktail found = "+cocktail+" score = "+str(c[1]))
         

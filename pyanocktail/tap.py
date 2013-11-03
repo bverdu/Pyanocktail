@@ -12,9 +12,10 @@ from pyanocktail import pyanocktaild
 class Options(usage.Options):
     port = 8888
     try:
+        
         confDir = os.path.expanduser("~/.pianocktail")
 #         print(confDir)
-#         conffile = open(os.path.join(dirname,"config"), 'r')
+        conffile = open(os.path.join(confDir,"config"), 'r')
     except Exception, err:
         confDir = "/etc/pianocktail"
 #         print("erreur conf: % " % err)
