@@ -55,11 +55,16 @@ if __name__ == '__main__':
                     ('/usr/share/pianocktail/html', ['html/recipes.html']),
                     ('/usr/share/pianocktail/html', ['html/pianocktail.js']),
                     ('/usr/share/pianocktail/html', ['html/style.css']),
+                    ('/usr/share/pianocktail/scripts', ['scripts/PIANOCKTAIL.sci']),
+                    ('/usr/share/pianocktail/scripts', ['scripts/RECETTE.sci']),
+                    ('/usr/share/pianocktail/scripts', ['scripts/TEMPO.sci']),
+                    ('/usr/share/pianocktail/scripts', ['scripts/TONALITE.sci']),
+                    ('/usr/share/pianocktail/scripts', ['scripts/METRIQUE.sci']),
                     ('/usr/share/pianocktail/html/fonts', ['html/fonts/DEFTONE.ttf']),
-                  ('/etc/pianocktail', []),
-                  ('/usr/share/pianocktail/db', []),
-                  ('/usr/lib/systemd/system', ['pianocktail.service']),
-                  ('/usr/lib/systemd/system', ['pianocktail.socket'])],
-        **extraMeta)
+                    ('/etc/pianocktail', []),
+                    ('/usr/share/pianocktail/db', []),
+                    ('/usr/lib/systemd/system', ['pianocktail.service']),
+                    ('/usr/lib/systemd/system', ['pianocktail.socket'])],
+          **extraMeta)
     
     refresh_plugin_cache()

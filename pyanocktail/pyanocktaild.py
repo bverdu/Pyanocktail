@@ -61,7 +61,8 @@ def makeService(config):
     else:
         dirname = "/etc/pianocktail"
         installdir = "/usr/share/pianocktail"
-    conf = mainConfig(dirname,installdir,True)
+    port = config['port']
+    conf = mainConfig(dirname,installdir,port,True)
 #     if config['basedir'] is not None:
 #         basedir = config['basedir']
 #     else:

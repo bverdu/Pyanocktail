@@ -211,7 +211,9 @@ class WebService(internet.TCPServer): #@UndefinedVariable
     
     def analyze(self, tabs):
         #log.msg("analyse requested")
-        prog = self.conf.extProgram
+        prog = os.path.abspath(self.conf.extProgram)
+        if self.debug:
+            log.msg("Analyze executable: %s" % prog)
         pargs = ['-nwni','-nb', '-f','PIANOCKTAIL.sci']
         en = {'SCIHOME' : os.path.join(self.conf.installdir,"scripts")}
         d = utils.getProcessOutput(prog, 
@@ -457,7 +459,7 @@ class MainPage(Resource):
 #             request.finish()
                 
     def resultFailed(self, result, request, rollback=False):
-        #log.msg('db update failed...%s' % str(result))
+        log.msg('db update failed...%s' % str(result))
         if rollback:
             reactor.callInThread(self.parent.dbsession.rollback)#@UndefinedVariable
         r = dict()

@@ -1,0 +1,3 @@
+#!/bin/sh
+update-rc.d twisted-pyanocktaild defaults >/dev/null
+invoke-rc.d twisted-pyanocktaild start

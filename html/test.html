@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" type="text/css" href="style.css" />
+<title>Test pumps</title>
+</head>
+<body>
+	<table id="tablepumps">
+		<thead>
+			<tr>
+				<th>Name</th>
+				<th>Deg</th>
+				<th>Pump</th>
+				<th>Duration</th>
+				<th>Quantity</th>
+				<th>Test</th>
+				<th>Save</th>
+				<th>Delete</th>
+			</tr>
+		</thead>
+		<tbody id="ingredients" contenteditable="true">
+			<tr id="r0">
+
+				<td>
+					<div class="desc" contenteditable="false" onblur="changedCell("r0")">Jus
+						d'Orange</div>
+				</td>
+				<td><input id="01" type="number" tabindex="0"
+					onblur="changedCell(" r0")" value="0"></input></td>
+				<td><input id="02" type="number" tabindex="0"
+					onblur="changedCell(" r0")" value="1"></input></td>
+				<td><input id="03" type="number" tabindex="0"
+					onblur="changedCell(" r0")" value="1000"></input></td>
+				<td><meter min="0" max="100" value="85">85 cl</meter><input id="04" type="number" tabindex="0"
+					onblur="changedCell(" r0")" value="100"></input></td>
+				<td contenteditable="false">
+					<button id="1" onclick="stopchrono("r0")">Start/Stop</button>
+				</td>
+				<td contenteditable="false">
+					<button onclick="saveRow("r0")">Save</button>
+				</td>
+				<td contenteditable="false">
+					<button onclick="delPump(0, 3)">X</button>
+				</td>
+
+			</tr>
+
+		</tbody>
+		<tfoot>
+			<tr>
+				<th>Name</th>
+				<th>Deg</th>
+				<th>Pump</th>
+				<th>Duration</th>
+				<th>Quantity</th>
+				<th>Test</th>
+				<th>Save</th>
+				<th>Delete</th>
+			</tr>
+		</tfoot>
+	</table>
+</body>
+</html>

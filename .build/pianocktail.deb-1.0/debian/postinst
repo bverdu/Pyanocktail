@@ -1,0 +1,3 @@
+#!/bin/sh
+update-rc.d pianocktail.deb defaults >/dev/null
+invoke-rc.d pianocktail.deb start

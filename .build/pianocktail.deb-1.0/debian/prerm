@@ -1,0 +1,2 @@
+#!/bin/sh
+invoke-rc.d pianocktail.deb stop

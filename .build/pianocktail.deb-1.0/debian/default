@@ -1,0 +1,5 @@
+pidfile=/var/run/pianocktail.deb.pid
+rundir=/var/lib/pianocktail.deb/
+file=/etc/pyanocktaild.py
+logfile=/var/log/pianocktail.deb.log
+ 

@@ -1,0 +1,5 @@
+pidfile=/var/run/twisted-pyanocktaild.pid
+rundir=/var/lib/twisted-pyanocktaild/
+file=/etc/pyanocktaild.py
+logfile=/var/log/twisted-pyanocktaild.log
+ 

@@ -93,6 +93,7 @@ def switchcontrol(control, on=0, debug=False):
                
             else:
                 pwm_ctrl[idx].setPWM(control[2], 0, 0)
+                
         if control[0] == 'fake_gpio':
             try:
                 idx = init_gpio.index(control[1])

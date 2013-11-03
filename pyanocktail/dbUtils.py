@@ -254,7 +254,7 @@ def setPumps(session, pump_list):
                        fct=row['fct'])
         else:
             p = session.query(Pump).filter(Pump.pump == row['pump']).one()
-            if str(row['chan']) == '0':
+            if str(row['bus']) == '-1':
                 session.delete(p)
                 continue
             p.description = row['description']

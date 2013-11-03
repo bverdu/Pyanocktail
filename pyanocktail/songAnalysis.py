@@ -21,33 +21,33 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
             duree = line.split()[0].split('=')[1]
             tristesse = line.split()[1].split('=')[1]
             enervement = line.split()[2].split('=')[1]
-            res.append(u"Durée du morceau = " + duree + " secondes")
+            res.append("Durée du morceau = " + duree + " secondes")
             res.append('tristesse = '+tristesse)
-            res.append('enervement = '+enervement)
+            res.append('énervement = '+enervement)
             if debug:
-                print(u"Durée du morceau = " + duree)
+                print("Durée du morceau = " + duree)
             if debug:
                 print("tristesse returned = "+tristesse)
         elif line.startswith(' Complexite'):
             complexite = line.split()[0].split('=')[1]
             metrique = line.split()[1].split('=')[1]
             tonalite = line.split()[2].split('=')[1]
-            res.append('complexite = '+complexite)
+            res.append('complexité = '+complexite)
             if int(metrique.strip('.')) == 2:
-                res.append(u"Métrique = Binaire")
+                res.append("Métrique = Binaire")
                 if debug:
-                    print(u"Metrique = Binaire")
+                    print("Métrique = Binaire")
             elif int(metrique.strip('.')) == 3:
-                res.append(u"Metrique = Ternaire")
+                res.append("Métrique = Ternaire")
                 if debug:
-                    print(u"Metrique = Ternaire")
+                    print("Métrique = Ternaire")
             else:
-                res.append(u"Metrique incoherente....")
+                res.append("Métrique incoherente....")
                 if debug:
-                    print(u"Metrique incoherente....")
-            res.append(u"Tonalité = "+tonalite_tab[int(tonalite.strip('.'))-1])
+                    print("Métrique incoherente....")
+            res.append("Tonalité = "+tonalite_tab[int(tonalite.strip('.'))-1])
             if debug:
-                print(u"Tonalite = " +tonalite_tab[int(tonalite[0].strip('.')) - 1])
+                print("Tonalité = " +tonalite_tab[int(tonalite[0].strip('.')) - 1])
         elif line.startswith(' Tempo'):
             tempo = line.split()[0].split('=')[1]
             cock = line.split()[1].split('=')[1:]
@@ -64,9 +64,9 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
         if debug:
             print(recipe['name']+" score = "+str(score))
         if score < c[1]:
-            print("rr")
+#             print("rr")
             c[0] = int(recipe['id'])
-            print("rrr")
+#             print("rrr")
             c[1] = score
             cocktail = recipe['name']
     res.append(u"Cocktail choisi : "+cocktail)

@@ -38,7 +38,7 @@ class mainConfig:
     temoin_ready = 0
     temoin_analyse = 0
     temoin_error = 0
-    httpport = 8888
+#     httpport = 8888
     preservice = None
     postservice = None
     old = 1
@@ -62,8 +62,9 @@ class mainConfig:
                    'theme','installdir','extProgram','perf','sysInport',
                    'sysOutport','alc','complexind','tristind','nervind',
                    'factor','dbconnectstring','installdir','langage')
-    def __init__(self,dirname,installdir,db=False):
+    def __init__(self,dirname,installdir,port,db=False):
         self.load(dirname,installdir)
+        self.httpport = int(port)
         if db:
             self.dbsession = self.dbconnect()
         self.configdir = dirname
@@ -156,13 +157,7 @@ def loadconffromfile(obj,filename):
     emptyfile = True
     for line in open(filename,'r').readlines():
         try:
-            if line.split('=')[0] in ('preservice','posteservice'):
-                t = []
-                for i in line.split('=')[1].split():
-                    if i != '\n':
-                        t.append(i)
-                setattr(obj,line.split('=')[0],t)
-            elif str(line.split('=')[1]).rstrip('\n').isdigit() :
+            if str(line.split('=')[1]).rstrip('\n').isdigit() :
 #                print("digit!")
                 setattr(obj,line.split('=')[0],int(line.split('=')[1].rstrip('\n')))  
             else:
@@ -175,6 +170,8 @@ def loadconffromfile(obj,filename):
                         print("debug mode on") 
                 else:
                     setattr(obj,line.split('=')[0],str(line.split('=')[1]).rstrip('\n'))
+                    if obj.debug:
+                        print(line.split('=')[0]+' ', str(line.split('=')[1]).rstrip('\n'))
             list_params.append(line.split('=')[0])
             emptyfile = False
         except:

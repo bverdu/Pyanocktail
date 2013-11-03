@@ -352,7 +352,7 @@ class Seq(Sequencer):
         self.start_time = time()
         poller = select.poll()
         self.filename = filename
-        print(u'Séquenceur Midi %s started on pid %d' % (self.clientname, getpid()), file=sys.stderr)
+        print('Sequenceur Midi %s started on pid %d' % (self.clientname, getpid()), file=sys.stderr)
         if auto:
             self.connect_auto()
         self.register_poll(poller, input=True, output=False)

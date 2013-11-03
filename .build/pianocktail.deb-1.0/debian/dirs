@@ -1,0 +1,5 @@
+etc/init.d
+etc/default
+var/lib/pianocktail.deb
+usr/share/doc/pianocktail.deb
+usr/share/pianocktail.deb

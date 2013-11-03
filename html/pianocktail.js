@@ -888,23 +888,23 @@ function newSysLine(num, type, description, bus, channel, ratio, funct, avail) {
 	row.setAttribute("id", "r" + z);
 	var c = 0;
 	var cell = document.createElement("td");
-	var ipt = document.createElement("div");
-	ipt.setAttribute("tabindex", "0");
-	ipt.setAttribute("id", z + "".concat(c));
-	ipt.setAttribute("contenteditable", false);
-	c += 1;
-	ipt.setAttribute("onBlur", "changedCell(\"".concat("r" + z + "\")"));
-	// ipt.setAttribute("onBlur", "yo");
 	if (num == undefined) {
-		txt = document.createTextNode(pumpmax + 1);
-		pumpmax += 1;
+		var ipt = document.createElement("input");
+		ipt.setAttribute("value", pumpmax + 1);
 	} else {
+		var ipt = document.createElement("div");
+		ipt.setAttribute("contenteditable", false);
 		txt = document.createTextNode(num);
 		if (num > pumpmax) {
 			pumpmax = num;
 		}
+		ipt.appendChild(txt);
 	}
-	ipt.appendChild(txt);
+	ipt.setAttribute("tabindex", "0");
+	ipt.setAttribute("id", z + "".concat(c));
+	c += 1;
+	ipt.setAttribute("onBlur", "changedCell(\"".concat("r" + z + "\")"));
+	// ipt.setAttribute("onBlur", "yo");
 	cell.appendChild(ipt);
 	row.appendChild(cell);
 	var cell = document.createElement("td");
@@ -971,6 +971,7 @@ function newSysLine(num, type, description, bus, channel, ratio, funct, avail) {
 	c += 1;
 	if (channel == undefined) {
 		ipt.setAttribute("value", pumpmax);
+		pumpmax += 1;
 	} else {
 		ipt.setAttribute("value", channel);
 	}
@@ -1037,22 +1038,29 @@ function setConf() {
 		key = updatedrows[i];
 		console.log(key);
 		var t = document.getElementById(key);
+		var y = 0;
 		console.log(t);
 		var pcell = document.getElementById(key).getElementsByTagName("div");
-		var pump = pcell[0].innerHTML;
-		console.log(pump);
 		var tcell = document.getElementById(key).getElementsByTagName("select");
 		var type = tcell[0].value;
 		var icells = document.getElementById(key).getElementsByTagName("input");
-		if ((pump != undefined) && (icells[0].innerHTML != "New")) {
+		if (pcell[0] != undefined){
+			var pump = pcell[0].innerHTML;
+//			updrow.pump = pump;
+		}
+		else{
+			y += 1;
+			var pump = icells[0].value;
+		}
+		if ((pump != undefined) && (icells[0+y].innerHTML != "New")) {
 			updrow = {};
 			updrow.pump = pump;
 			updrow.type = type;
-			updrow.description = icells[0].value;
-			updrow.bus = icells[1].value;
-			updrow.chan = icells[2].value;
-			updrow.ratio = icells[3].value;
-			updrow.fct = icells[4].value;
+			updrow.description = icells[0+y].value;
+			updrow.bus = icells[1+y].value;
+			updrow.chan = icells[2+y].value;
+			updrow.ratio = icells[3+y].value;
+			updrow.fct = icells[4+y].value;
 			rows.push(updrow);
 		}
 	}
@@ -1063,6 +1071,11 @@ function setConf() {
 			var data = eval("(" + req.responseText + ")");
 			if (data.updated == "1") {
 				console.log("update = OK");
+				getConf();
+			}
+			else{
+				alert("This relay is in use");
+				updatedrows = [];
 				getConf();
 			}
 		}

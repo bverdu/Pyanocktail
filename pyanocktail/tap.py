@@ -10,6 +10,7 @@ from pyanocktail.config import mainConfig
 from pyanocktail import pyanocktaild
 
 class Options(usage.Options):
+    port = 8888
     try:
         confDir = os.path.expanduser("~/.pianocktail")
 #         print(confDir)
@@ -18,14 +19,12 @@ class Options(usage.Options):
         confDir = "/etc/pianocktail"
 #         print("erreur conf: % " % err)
     try:
-        conf = mainConfig(confDir,'/usr/share/pianocktail')
+        conf = mainConfig(confDir,'/usr/share/pianocktail',port,False)
         config = confDir
         basedir = conf.installdir
-        port = conf.httpport
     except:
         config = None
         basedir = '/usr/share/pianocktail'
-        port = 8888
 #     dev = False
     optParameters = [
     ['config', 'c', config, 'Configuration file path'],

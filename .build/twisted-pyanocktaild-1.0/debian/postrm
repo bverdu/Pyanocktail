@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ "$1" = purge ]; then
+        update-rc.d twisted-pyanocktaild remove >/dev/null
+fi
