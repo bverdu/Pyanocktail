@@ -1,3 +1,0 @@
-'''
-pyanocktaild multiservice
-'''
