@@ -1,4 +1,0 @@
-#!/bin/sh
-if [ "$1" = purge ]; then
-        update-rc.d pianocktail.deb remove >/dev/null
-fi

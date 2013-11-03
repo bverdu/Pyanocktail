@@ -1,5 +1,0 @@
-etc/init.d
-etc/default
-var/lib/twisted-pyanocktaild
-usr/share/doc/twisted-pyanocktaild
-usr/share/twisted-pyanocktaild
