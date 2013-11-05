@@ -6,7 +6,7 @@ Created on 30 mai 2012
 '''
 import sys, os, json
 # from numpy import ndarray
-from twisted.application import internet
+from twisted.application.internet import StreamServerEndpointService
 from twisted.internet import defer,\
                              protocol,\
                              reactor,\
@@ -38,8 +38,7 @@ Com['close']=9
 Com['config']=6
 Com['pump']=10
 
-class WebService(internet.TCPServer): #@UndefinedVariable
-# class WebService(endpoints.TCP4ServerEndpoint): #@UndefinedVariable
+class WebService(StreamServerEndpointService): 
     '''
     web interface module
     '''    
@@ -65,16 +64,20 @@ class WebService(internet.TCPServer): #@UndefinedVariable
         self.page = Dispatcher(debug, basedir, conf)
         print("installdir= %s" % basedir)
         self.page.parent = self
-        self.wsfactory = SeqFactory(debug, self.port)
+        self.site = server.Site(self.page)
+        self.site.protocol = HTTPChannelHixie76Aware
+        if isinstance(conf.httpport, int):
+            edp = endpoints.serverFromString(reactor, "tcp:"+str(conf.httpport))
+        else:
+            edp = endpoints.serverFromString(reactor, conf.httpport)
+        StreamServerEndpointService.__init__(self, edp, self.site)
+        self.wsfactory = SeqFactory(debug, self.endpoint._port)
         self.wsfactory.protocol = PyanoTCP
         self.wsfactory.setProtocolOptions(allowHixie76 = True)
         self.wsfactory.parent = self
         self.wsresource = WebSocketResource(self.wsfactory)
         self.page.putChild("ws", self.wsresource)
-        self.site = server.Site(self.page)
-        self.site.protocol = HTTPChannelHixie76Aware
-        internet.TCPServer.__init__(self, conf.httpport, self.site)#@UndefinedVariable
-#         endpoints.TCP4ServerEndpoint.__init__(self, conf.httpport, self.site)
+#         self.realport = self.endpoint._port
         
     def startService(self):
         
@@ -223,7 +226,7 @@ class WebService(internet.TCPServer): #@UndefinedVariable
                                    args=pargs,
                                    path=os.path.join(self.conf.installdir,"scripts"),
                                    env=en, errortoo=True)
-        d.addCallback(filter_process_result, *(tabs,))
+        d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
         d.addCallback(self.showResult)
         
 
@@ -234,7 +237,7 @@ class SeqFactory(WebSocketServerFactory):
         self.debug = debug
         self.clients = []
         self.lastmsg = ""
-        WebSocketServerFactory.__init__(self, "ws://localhost:"+port, 
+        WebSocketServerFactory.__init__(self, "ws://localhost:"+str(port), 
                                         debug = debug, 
                                         debugCodePaths = debug)
     def got_midipid(self,midipid):

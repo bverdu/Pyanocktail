@@ -47,24 +47,20 @@ class mainConfig:
     tristind = 1
     nervind = 1
     langage = 'fr'
-    installdir = "/usr/share/pianocktail"
-    #dbtype = 'sqlite'
-    #dbconnectstring= ''
+    dbtype = 'sqlite'
+    dbconnectstring= ''
     dbase = 'pianocktail'
     dbuser = 'piano'
     dbpwd = 'cocktail'
     theme = "none"
     dbsession = False
     extProgram = "scilab"
-    list_params = ('debug','dep','up','down','start','stop','cockt','panic',
-                   'reload','uppump','downpump','statusevt','temoin_save',
-                   'temoin_ready','temoin_analyse','temoin_error','httpport',
-                   'theme','installdir','extProgram','perf','sysInport',
+    list_params = ('debug','extProgram','sysInport',
                    'sysOutport','alc','complexind','tristind','nervind',
-                   'factor','dbconnectstring','installdir','langage')
+                   'factor','langage')
     def __init__(self,dirname,installdir,port,db=False):
         self.load(dirname,installdir)
-        self.httpport = int(port)
+        self.httpport = port
         if db:
             self.dbsession = self.dbconnect()
         self.configdir = dirname
@@ -75,6 +71,8 @@ class mainConfig:
         except:
             dbtype = 'sqlite'
             dbstring = os.path.join(os.path.abspath(self.installdir),'db','pianocktail.db')
+        self.dbtype = dbtype
+        self.dbconnectstring = dbstring
         try:
             if dbtype == 'sqlite':
 #                 if os.access(dbstring, os.F_OK) == False:
@@ -83,6 +81,7 @@ class mainConfig:
 #                     f.close()
                 if len(dbstring) > 0:
                     dbstring = '/'+dbstring
+            print(dbtype+"://"+dbstring)
             return initdb(dbtype+"://"+dbstring, dbtype, self.debug)
         except Exception,err:
             print("db connection failed : %s" % err)

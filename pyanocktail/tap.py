@@ -10,9 +10,8 @@ from pyanocktail.config import mainConfig
 from pyanocktail import pyanocktaild
 
 class Options(usage.Options):
-    port = 8888
+    port = "tcp:8888"
     try:
-        
         confDir = os.path.expanduser("~/.pianocktail")
 #         print(confDir)
         conffile = open(os.path.join(confDir,"config"), 'r')
