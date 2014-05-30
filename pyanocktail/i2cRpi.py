@@ -62,7 +62,7 @@ def switchcontrol(control, on=0, debug=False):
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
             if on == 1:
-                pwm_ctrl[idx].setPWM(control[2], control[3]*1024, 0)
+                pwm_ctrl[idx].setPWM(control[2], int(control[3]*1024.0), 0)
             else:
                 pwm_ctrl[idx].setPWM(control[2], 0, 0)
                 
@@ -89,7 +89,7 @@ def switchcontrol(control, on=0, debug=False):
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
             if on == 1:
-                pwm_ctrl[idx].setPWM(control[2], control[3]*1024, 0)
+                pwm_ctrl[idx].setPWM(control[2], control[3]*1024.0, 0)
                
             else:
                 pwm_ctrl[idx].setPWM(control[2], 0, 0)
@@ -158,10 +158,10 @@ def playRecipe(ingredients_list, debug=False):
             if ingredient[5] not in ('None',''):
                 fct = ingredient[5](ingredient[3])
                 for ratio, duration in fct:
-                    pwm_ctrl[idx].setPWM(ingredient[2], ratio*ingredient[4]*1024, 0)
+                    pwm_ctrl[idx].setPWM(ingredient[2], int(ratio*ingredient[4]*1024.0), 0)
                     time.sleep(duration)
             else:
-                pwm_ctrl[idx].setPWM(ingredient[2], ingredient[4]*1024, 0)
+                pwm_ctrl[idx].setPWM(ingredient[2], int(ingredient[4]*1024.0), 0)
                 time.sleep(ingredient[3])
             pwm_ctrl[idx].setPWM(ingredient[2], 0, 0)
             

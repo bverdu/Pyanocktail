@@ -47,8 +47,8 @@ class mainConfig:
     tristind = 1
     nervind = 1
     langage = 'fr'
-    dbtype = 'sqlite'
-    dbconnectstring= ''
+#     dbtype = 'sqlite'
+#     dbconnectstring= ''
     dbase = 'pianocktail'
     dbuser = 'piano'
     dbpwd = 'cocktail'
@@ -63,6 +63,10 @@ class mainConfig:
         self.httpport = port
         if db:
             self.dbsession = self.dbconnect()
+            self.dbsession.ingredients = None
+            self.dbsession.pumps = None
+            self.dbsession.cocktails = None
+            self.dbsession.ingList = None
         self.configdir = dirname
     def dbconnect(self):
         try:

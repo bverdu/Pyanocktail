@@ -8,6 +8,9 @@ import math
 
 tonalite_tab = ['Do Majeur', 'Do# Majeur', 'Re Majeur', 'Re# Majeur', 'Mi Majeur', 'Fa Majeur', 'Fa# Majeur', 'Sol Majeur', 'Sol# Majeur', 'La Majeur', 'La# Majeur', 'Si Majeur', 'Do Mineur', 'Do# Mineur', 'Re Mineur', 'Re# Mineur', 'Mi Mineur', 'Fa Mineur', 'Fa# Mineur', 'Sol Mineur', 'Sol# Mineur', 'La Mineur', 'La# Mineur', 'Si Mineur']
 
+def format_output(output):
+    return ''' Duree=%s tristesse=%s enervement=%s\n Complexite=%s metrique=%s tonalite=%s\n Tempo=%s Cocktail=%s''' % output
+
 def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, debug=False):
     result = {}
     res = []

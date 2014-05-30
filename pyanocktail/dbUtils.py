@@ -62,6 +62,23 @@ class Pump(Base):
     def __repr__(self):
         return "<Pump(%d, \"%s\")>" % (self.pump, self.description)
     
+class Switch(Base):
+    __tablename__ = 'switches'
+    
+    switch_id = Column(Integer, primary_key=True, autoincrement=False)
+    description = Column(String(50))
+    function = Column(String(10))
+    param = Column(String(10))
+    available = Column(Boolean)
+    
+    def __init__(self, gpionum, description='', fct='None'):
+        self.switch_id = gpionum
+        self.description = description
+        self.function = fct
+        
+    def __repr__(self):
+        return "<Switch(%d, \"%s\")>" % (self.switch_id, self.description)
+    
 class Ingredient(Base):
     __tablename__ = 'ingredients'
     
@@ -135,6 +152,10 @@ def initdb(connect_string, dbtype, debug):
     
     
 def getCocktails(session, alcool=True):
+    
+    if session.cocktails != None:
+        if session.alcool == alcool:
+            return session.cocktails
      
     cocktails= []
     discarded = []
@@ -189,6 +210,8 @@ def getCocktails(session, alcool=True):
                               'score3': int(cocktail.score3), 
                               'available': 'OK'})
                 
+    session.alcool = alcool
+    session.cocktails = cocktails
     return cocktails
 
 def setCocktails(session, cocktail_list):
@@ -208,13 +231,17 @@ def setCocktails(session, cocktail_list):
             p.score3 = int(row['score3'])
             
         session.add(p)
+    session.cocktails = None
 
 def delCocktails(session, cocktail_list):
     
     for row in cocktail_list:
         session.delete(session.query(Cocktail).get(int(row['id'])))
+    session.cocktails = None
 
 def getPumps(session):
+    if session.pumps != None:
+        return session.pumps
     pumps = []
     for pump in session.query(Pump).all():
         pumps.append({'num': int(pump.pump),
@@ -225,6 +252,7 @@ def getPumps(session):
                       'ratio': float(pump.ratio),
                       'funct': str(pump.function),
                       'avail': bool(pump.available)})
+    session.pumps = pumps
     return pumps
 
 def getPump(session, num):
@@ -264,11 +292,13 @@ def setPumps(session, pump_list):
             p.ratio = row['ratio']
             p.function = row['fct']
         session.add(p)
+    session.pumps = None
 
 def getIngredients(session):
-     
-    ingredients= []
     
+    if session.ingredients != None:
+        return session.ingredients 
+    ingredients= []
     for ingredient  in session.query(Ingredient).all():
         ingredients.append({'id': int(ingredient.ingredient_id),
                             'name' : ingredient.name, 
@@ -276,10 +306,13 @@ def getIngredients(session):
                             'pump': int(ingredient.pump), 
                             'time':int(ingredient.duration), 
                             'qty':int(ingredient.qty_avail)})
+    session.ingredients = ingredients
     return ingredients
 
 def getIngList(session):
     
+    if session.ingList != None:
+        return session.ingList
     l = []
     l.append([])
     l.append([])
@@ -287,6 +320,7 @@ def getIngList(session):
         l[0].append(ingredient.name)
         l[1].append(ingredient.ingredient_id)
     #print(l)
+    session.ingList = l
     return l
 
 def setIngredients(session, ing_list):
@@ -308,12 +342,15 @@ def setIngredients(session, ing_list):
             ing.qty_avail = row['qty']
             
         session.add(ing)
+    session.ingList = None
+    session.ingredients = None
         
 def delIngredients(session, ing_list):
     
     for ing in ing_list:
         session.delete(session.query(Ingredient).get(int(ing['id'])))
-        
+    session.ingList = None
+    session.ingredients = None  
 
 def getRecipe(session, cocktail):
     

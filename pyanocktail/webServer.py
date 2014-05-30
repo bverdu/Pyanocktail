@@ -16,12 +16,13 @@ from twisted.internet import defer,\
 from twisted.web.resource import Resource
 from twisted.web import server, static
 from twisted.python import log, util
-from autobahn.websocket import WebSocketServerFactory, \
+from autobahn.twisted.websocket import WebSocketServerFactory, \
                                WebSocketServerProtocol
-from autobahn.resource import WebSocketResource, HTTPChannelHixie76Aware
+from autobahn.twisted.resource import WebSocketResource, HTTPChannelHixie76Aware
 import pyanocktail.dbUtils as dbUtils
 from pyanocktail.i2cRpi import switchcontrol, playRecipe
-from pyanocktail.songAnalysis import filter_process_result
+from pyanocktail.songAnalysis import filter_process_result, format_output
+from pyanalysis import PIANOCKTAIL
 # from pyanocktail.midi import listInports, listOutports
 
 # from pyanocktail.pyanocktaild import task_queue, status_queue
@@ -40,11 +41,11 @@ Com['pump']=10
 
 class WebService(StreamServerEndpointService): 
     '''
-    web interface module
+    web interface module and parent of all services
     '''    
     def __init__(self, debug, basedir, conf):
         '''
-        Constructor
+        Initialization of web and websocket servers
         '''
         self.playing = False
         self.conf = conf
@@ -80,31 +81,56 @@ class WebService(StreamServerEndpointService):
 #         self.realport = self.endpoint._port
         
     def startService(self):
-        
+        '''
+        Start slave processes to intercept midi and gpio events
+        '''
+        self.startMidi()
+        self.startGpio()
+        log.msg('Pianocktail started')
+            
+
+    def startMidi(self):
         self.midifactory = MidiFactory(self.debug, self)
         self.midi = self.midifactory.protocol(debug=self.debug)
         self.midi.factory = self.midifactory
-        pyexe = sys.executable
-        scriptpath = util.sibpath(__file__, "midiprocess.py")
-        ex = [pyexe, "-u"]
-        ex.append(scriptpath)
-        args = ['-a','-s', '-f', os.path.join(self.conf.installdir,"scripts/current.pckt")]
-        cmd =  ex + args
+        exe = sys.executable
+        midiscriptpath = util.sibpath(__file__, "midiprocess.py")
+        midiex = [exe, "-u"]
+        midiex.append(midiscriptpath)
+        midiargs = ['-a','-s', '-f', os.path.join(self.conf.installdir,"scripts/current.pckt")]
+        midicmd =  midiex + midiargs
         if self.debug:
-            log.msg(cmd)
-        self.midi.cmd = cmd
-        reactor.spawnProcess(self.midi, cmd[0], args=cmd, env=None,#@UndefinedVariable
+            log.msg(midicmd)
+        self.midi.cmd = midicmd
+        reactor.spawnProcess(self.midi, midicmd[0], args=midicmd, env=None,#@UndefinedVariable
                                  childFDs={0:"w", 1:"r", 2:"r"})
         
-        log.msg('Pianocktail started')
-# #         internet.TCPServer(self.port, self.site).setServiceParent(self)
-#         internet.TCPServer.__init__(self, self.port, self.site)
+    def startGpio(self):
+        self.gpiofactory = GpioFactory(self.debug, self)
+        self.gpio = self.gpiofactory.protocol(debug=self.debug)
+        self.gpio.factory = self.gpiofactory
+        exe = sys.executable
+        gpioscriptpath = util.sibpath(__file__, "gpioprocess.py")
+        gpioex = [exe, "-u"]
+        gpioex.append(gpioscriptpath)
+        gpioargs = ['-i', "1", "2", "3", "4", "5"]
+        gpiocmd = gpioex + gpioargs
+        if self.debug:
+            log.msg(gpiocmd)
+        self.gpio.cmd = gpiocmd
+        reactor.spawnProcess(self.gpio, gpiocmd[0], args=gpiocmd, env=None,#@UndefinedVariable
+                                 childFDs={0:"w", 1:"r", 2:"r"})
+
     def stopService(self):
+        self.gpiofactory.stop()
+        self.midifactory.stop()
         self.conf.save(self.conf.configdir)
         self.dbsession.commit()
         
     def showResult(self, result):
-        
+        '''
+        Display analysis result to ws status window
+        '''
         if result != None:
             self.analyzed = result
             for line in result['result']:
@@ -112,6 +138,9 @@ class WebService(StreamServerEndpointService):
         return int(result['cocktail'])
         
     def set_command(self,command, args=''):
+        '''
+        transmit or execute commands from web and ws interfaces
+        '''
         if command == 'stop':
             if self.playing:
                 self.midifactory.command('play 0')
@@ -139,8 +168,6 @@ class WebService(StreamServerEndpointService):
                     self.recording = False
                 if self.analyzed['cocktail'] == 0:
                     reactor.callLater(1, self.set_command, 'cocktail') #@UndefinedVariable
-                
-                
         elif command[:4] == 'test':
             cont = dbUtils.getPump(self.dbsession, command[6:])
             if len(cont) > 1:
@@ -155,15 +182,18 @@ class WebService(StreamServerEndpointService):
                         % command[6:])
                 
     def get_command(self,command):
+        '''
+        manage commands from midi process
+        '''
         if self.debug:
             log.msg('command from midi process: %s' % command)
         if command == 'Recorded':
             self.wsfactory.sendmessage("Analysing...")
             d = threads.deferToThread(self.getDataAnalysis)
             d.addCallback(self.analyze)
-            
         else:
             self.wsfactory.sendmessage(command)
+            
     def getDataAnalysis(self):
         return dbUtils.getCocktails(self.dbsession, bool(self.conf.alc))
     
@@ -177,12 +207,14 @@ class WebService(StreamServerEndpointService):
             log.msg("unlocking %s" % db)
     
     def get_info(self, data):
+        '''
+        process information data from midi process
+        '''
         if self.debug:
             log.msg('info from midi process: %s' % data)
 #         cid = d.split(':')[0]
 #         pid = d.split(':')[1]
 #         cname = ''.join(for s in d[1:-1])
-        
         if data.split()[0] == 'Input:':
             self.outports.append([data.split()[-1].split(':')[0], 
                                  data.split()[-1].split(':')[1], 
@@ -191,7 +223,11 @@ class WebService(StreamServerEndpointService):
             self.inports.append([data.split()[-1].split(':')[0], 
                                  data.split()[-1].split(':')[1], 
                                  ' '.join(s for s in data.split()[1:-1])])
+            
     def get_conf(self, data):
+        '''
+        process configuration data from midi process
+        '''
         if self.debug:
             log.msg('config from midi process: %s' % data)
         if data.split()[0] == 'Input_port:':
@@ -201,21 +237,22 @@ class WebService(StreamServerEndpointService):
             self.sysports[1] = (data.split()[-1].split(':')[0], 
                                 data.split()[-1].split(':')[1])
 #         log.msg(self.sysports)
+
     def get_data(self, data):
         if self.debug:
             log.msg('data from midi process: %s' % data)
+            
     def set_data(self, data, args=''):
         if self.debug:
             log.msg(data+' sent to midiprocess')
         self.midifactory.send(data)
         
     def serve(self, cocktail_id):
-        
         service = dbUtils.getServe(self.dbsession, cocktail_id)
         playRecipe(service, self.debug)
         return "Cocktail Servi!"
     
-    def analyze(self, tabs):
+    def analyze_old(self, tabs):
         #log.msg("analyse requested")
         prog = os.path.abspath(self.conf.extProgram)
         if self.debug:
@@ -229,8 +266,18 @@ class WebService(StreamServerEndpointService):
         d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
         d.addCallback(self.showResult)
         
-
+    def analyze(self, tabs):
+        if self.debug:
+            log.msg("Analyse Python")
+        d = threads.deferToThread(PIANOCKTAIL, os.path.join(self.conf.installdir,"scripts","current.pckt"))
+        d.addCallback(format_output)
+        d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
+        d.addCallback(self.showResult)
+        
 class SeqFactory(WebSocketServerFactory):
+    '''
+    WebSocket Factory
+    '''
     def __init__(self,debug, port):
 #         self.task = task_queue
 #         self.notein = notein_queue
@@ -240,8 +287,10 @@ class SeqFactory(WebSocketServerFactory):
         WebSocketServerFactory.__init__(self, "ws://localhost:"+str(port), 
                                         debug = debug, 
                                         debugCodePaths = debug)
+        
     def got_midipid(self,midipid):
         self.midipid = midipid
+        
     def sendmessage(self,message):
         self.lastmsg = message
         try :
@@ -250,6 +299,7 @@ class SeqFactory(WebSocketServerFactory):
         except Exception,err:
             if self.debug:
                 log.msg("sendmessage error: "+err.message)
+                
     def wsReceived(self,data):
         #log.msg('data=%s' %data)
         if data.isdigit():
@@ -268,6 +318,9 @@ class SeqFactory(WebSocketServerFactory):
                 return defer.Deferred(self.parent.set_command(data))
     
 class PyanoTCP(WebSocketServerProtocol):
+    '''
+    ws protocol
+    '''
     
     def connectionMade(self):
         self.factory.clients.append(self)
@@ -276,6 +329,7 @@ class PyanoTCP(WebSocketServerProtocol):
         WebSocketServerProtocol.connectionMade(self)
         self.send(self.factory.lastmsg)
 #     def dataReceived(self, data):
+
     def onMessage(self, data, binary):
         if self.factory.debug:
             log.msg('data from ws: '+data)
@@ -292,10 +346,12 @@ class PyanoTCP(WebSocketServerProtocol):
                 self.sendMessage(message)
 #            self.transport.loseConnection()
         d.addCallback(writeResponse)
+        
     def connectionLost(self, reason):
         self.factory.clients.remove(self)
         if self.factory.debug:
             log.msg("ws connection lost\n")
+            
     def send(self,data,debug=False):
         if self.connected:
             self.sendMessage(data.encode('utf-8'))
@@ -305,7 +361,9 @@ class PyanoTCP(WebSocketServerProtocol):
             log.msg("Sent failed: not connected")
             
 class MidiProtocol(protocol.ProcessProtocol):
-    
+    '''
+    protocol in charge of slave local midi process
+    '''
     def __init__(self, debug=False):
         self.debug = debug
 #         self.psname = processname
@@ -340,16 +398,22 @@ class MidiProtocol(protocol.ProcessProtocol):
                 self.factory.notes.append([n[0], n[1], n[2], n[3]])
             except:
                 pass
+            
     def write(self, data):
         if self.debug:
             log.msg('sending %s' % data)
         self.transport.write(data+'\n')
-                
         
+    def shutdown(self):
+        if self.debug:
+            log.msg('stopping midi subprocess')
+        self.transport.signalProcess('INT')
+                
 class MidiFactory(protocol.Factory):
-    
+    '''
+    factory for slave local midi process
+    '''
     protocol = MidiProtocol
-    
     def __init__(self, debug, parent):
         self.debug = debug
         self.parent = parent
@@ -358,8 +422,10 @@ class MidiFactory(protocol.Factory):
         
     def send(self,data):
         self.proto.write(data)
+        
     def command(self,command,args=''):
         self.proto.write(command+" "+args)
+        
     def receive(self,c, data):
         if c in (0,1,3):
             self.parent.get_command(data)
@@ -370,8 +436,75 @@ class MidiFactory(protocol.Factory):
                 self.parent.get_info(data)
             else:
                 self.parent.get_data(data)
+    def stop(self):
+        try:
+            self.proto.shutdown()
+        except:
+            # Already exited
+            pass
+        
+class GpioProtocol(protocol.ProcessProtocol):
+    '''
+    protocol in charge of local gpio subprocess
+    '''
+    def __init__(self, debug=False):
+        self.debug = debug
+#         self.psname = processname
+        self.text = ""
+        self.debugmsg = ""
+        self.decoding = False
+        self.num = 0
+
+    def connectionMade(self):
+        log.msg("gpio process started")
+#         self.transport.write("resume\n")
+        self.factory.proto = self
+        
+    def childDataReceived(self, childFD, data):
+        if childFD == 1:
+            for l in data.split('\n'):
+                try:
+                    c = int(l.split()[0])
+                    self.factory.receive(c)
+                except:
+                    if l != '':
+                        if l != 'None':
+                            log.msg("unknown message from gpio process: %s" % l)
+        elif childFD == 2:
+            for l in data.split('\n'):
+                if l != '':
+                    log.msg("Error message from gpio process: %s" % l)
+                        
+    def shutdown(self):
+        if self.debug:
+            log.msg('Stopping gpio subprocess')
+        self.transport.signalProcess('INT')
+                
+class GpioFactory(protocol.Factory):
+    '''
+    factory for slave local gpio process
+    '''
+    protocol = GpioProtocol
+    def __init__(self, debug, parent):
+        self.debug = debug
+        self.parent = parent
+        self.notes = []
+        
+    def stop(self):
+        try:
+            self.proto.shutdown()
+        except:
+            # Already exited
+            pass
+        
+    def receive(self,c):
+        if self.parent.debug:
+            log.msg('Input signal from GPIO: %d' % c)
 
 class Dispatcher(Resource):
+    '''
+    Dispatch request between static or dynamic pages
+    '''
     isLeaf = False
     def __init__(self,debug,installdir,conf):
         Resource.__init__(self)
@@ -421,11 +554,13 @@ class Dispatcher(Resource):
         
     def getChild(self, name, request):
         if self.debug:
-            log.msg("page demandée: "+str(name))
+            log.msg("page requested: "+str(name))
         return MainPage(name,self.debug,self.installdir,self.conf, self.parent)
         
 class MainPage(Resource):
-    
+    '''
+    Handle dynamic content, mainly POST requests
+    '''
     def __init__(self,page,debug,installdir,conf,parent):
         Resource.__init__(self)
         self.page = page
@@ -477,7 +612,6 @@ class MainPage(Resource):
         getattr(req,com)(result)
         req.finish()
         
-                
     def render_GET(self, request):
         if self.page == '':
             request.redirect('main')
@@ -667,7 +801,3 @@ class MainPage(Resource):
         dbUtils.setRecipe(dbsession, req)
         return 1
     
-        
-    
-
-                
