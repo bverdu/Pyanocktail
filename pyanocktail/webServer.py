@@ -90,6 +90,7 @@ class WebService(StreamServerEndpointService):
             
 
     def startMidi(self):
+        self.notes = []
         self.midifactory = MidiFactory(self.debug, self)
         self.midi = self.midifactory.protocol(debug=self.debug)
         self.midi.factory = self.midifactory
@@ -157,7 +158,7 @@ class WebService(StreamServerEndpointService):
                 self.analyzed['result'] = ''
                 if self.recording == False:
                     self.recording = True
-                    self.midifactory.notes = []
+                    self.notes = []
         elif command == 'cocktail':
             if self.analyzed['cocktail'] > 0:
                 d = threads.deferToThread(self.serve, *(self.analyzed['cocktail'],))
@@ -189,6 +190,7 @@ class WebService(StreamServerEndpointService):
             log.msg('command from midi process: %s' % command)
         if command == 'Recorded':
             self.wsfactory.sendmessage("Analysing...")
+#             log.msg(self.notes)
             d = threads.deferToThread(self.getDataAnalysis)
             d.addCallback(self.analyze)
         else:
@@ -269,7 +271,8 @@ class WebService(StreamServerEndpointService):
     def analyze(self, tabs):
         if self.debug:
             log.msg("Analyse Python")
-        d = threads.deferToThread(PIANOCKTAIL, os.path.join(self.conf.installdir,"scripts","current.pckt"))
+#         d = threads.deferToThread(PIANOCKTAIL, *(os.path.join(self.conf.installdir,"scripts","current.pckt"),self.notes))
+        d = threads.deferToThread(PIANOCKTAIL, self.notes)
         d.addCallback(format_output)
         d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
         d.addCallback(self.showResult)
@@ -388,16 +391,17 @@ class MidiProtocol(protocol.ProcessProtocol):
                     if l != '':
                         log.msg("unknown message from midi process: %s" % l)
         elif childFD == 2:
-            if self.debug:
-                for l in data.split('\n'):
+            for l in data.split('\n'):
                     if l != '':
-                        log.msg(l)
-            try:
-                int(l[0])
-                n = l.split()
-                self.factory.notes.append([n[0], n[1], n[2], n[3]])
-            except:
-                pass
+                        if self.debug:
+                            log.msg(l)
+                        try:
+                            n = l.split()
+                            float(n[0])
+                            self.factory.parent.notes.append([float(n[0]), float(n[1]), float(n[2]), float(n[3])])
+                        except:
+#                             log.msg("unknown message from midiprocess: %s" %l)
+                                pass
             
     def write(self, data):
         if self.debug:
@@ -417,7 +421,6 @@ class MidiFactory(protocol.Factory):
     def __init__(self, debug, parent):
         self.debug = debug
         self.parent = parent
-        self.notes = []
 #         self.proto = MidiProtocol(debug=debug)
         
     def send(self,data):

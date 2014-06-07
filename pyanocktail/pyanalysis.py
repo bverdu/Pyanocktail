@@ -41,12 +41,16 @@ def arggsort(data):
 
     return indexes
 
-def PIANOCKTAIL(fname):
+def PIANOCKTAIL(notes):
     ######################################
     #  Ouverture des fichiers - Liste des ON / OFF / SUSTAIN
     ######################################
 
-    piano = np.loadtxt(fname)
+#     piano = np.loadtxt(fname)
+    if isinstance(notes,list):
+        piano = np.array(notes)
+    else:
+        piano = np.loadtxt(notes)
     l = piano.shape[0]
 
     # Liste des ON / OFF / SUSTAIN
