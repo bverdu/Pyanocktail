@@ -365,9 +365,9 @@ def getRecipe(session, cocktail):
     return recipe_list
 
 def setRecipe(session, cocktail):
+#     print("**************** cocktail = %s" % cocktail)
+#     print(cocktail['ingredients'])
     if session.query(Recipe).filter(Recipe.cocktail_id == cocktail['id']).count() == 0:
-        #print("cocktail = %s" % cocktail)
-        #print(cocktail['ingredients'])
         i = 0
         for ing in cocktail['ingredients']:
             #print("1 %s" % ing)
@@ -375,33 +375,43 @@ def setRecipe(session, cocktail):
                 continue
             #print("2")
             i+=1
-            r = Recipe(cocktail['id'], ing[0], i+1, quantity=ing[1])
+            r = Recipe(cocktail['id'], ing[0], i, quantity=ing[1])
             session.add(r)
     else:
-        l = session.query(Recipe).filter(Recipe.cocktail_id == cocktail['id']).order_by(Recipe.order).all()
-        i = 0
-        d = 0
-        for r in l:
-            try:
-                if cocktail['ingredients'][i][1] == 0:
-                    session.delete(r)
-                    d +=1
-                else:
-                    if d > 0:
-                        r.ingredient_id = cocktail['ingredients'][i-d][0]
-                    else:
-                        r.ingredient_id = cocktail['ingredients'][i][0]
-                    r.quantity = cocktail['ingredients'][i][1]
-                    session.add(r)
-                i+=1
-            except IndexError:
-                session.delete(r)
-        if len(cocktail['ingredients']) > len(l):
-            for i in range(len(l), len(cocktail['ingredients'])):
-                if cocktail['ingredients'][i][1] == 0:
-                    continue
-                r = Recipe(cocktail['id'], cocktail['ingredients'][i][0], i+1, quantity=cocktail['ingredients'][i][1])
+        for r in session.query(Recipe).filter(Recipe.cocktail_id == cocktail['id']).all():
+            session.delete(r)
+        i = 1
+        for ing in cocktail['ingredients']:
+            if ing[1] > 0:
+                r = Recipe(cocktail['id'], ing[0], i, quantity=ing[1])
                 session.add(r)
+                print("ing added: %d" %i)
+                i += 1
+#         l = session.query(Recipe).filter(Recipe.cocktail_id == cocktail['id']).order_by(Recipe.order).all()
+#         i = 0
+#         d = 0
+#         for r in l:
+#             try:
+#                 if cocktail['ingredients'][i][1] == 0:
+#                     session.delete(r)
+#                     d +=1
+#                 else:
+#                     if d > 0:
+#                         r.ingredient_id = cocktail['ingredients'][i-d][0]
+#                     else:
+#                         r.ingredient_id = cocktail['ingredients'][i][0]
+#                     r.quantity = cocktail['ingredients'][i][1]
+#                     session.add(r)
+#                 i+=1
+#             except IndexError:
+#                 session.delete(r)
+#         if len(cocktail['ingredients']) > len(l):
+#             for i in range(len(l), len(cocktail['ingredients'])):
+#                 if cocktail['ingredients'][i][1] == 0:
+#                     continue
+#                 r = Recipe(cocktail['id'], cocktail['ingredients'][i][0], i, quantity=cocktail['ingredients'][i][1])
+#                 session.add(r)
+#                 i+=1
         
 def getServe(session, cocktail):
     serve = []
