@@ -4,9 +4,8 @@ Description=Pianocktail service
 [Service]
 ExecStart=/usr/bin/twistd --nodaemon\
 			 			  --pidfile= \
-			 			  pianocktail --port tcp:8888
-User=piano
-Group=piano
+			 			  pianocktail --port tcp:80
+			 			  
 NonBlocking=true
 
 [Install]

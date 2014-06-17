@@ -68,6 +68,7 @@ class mainConfig:
             self.dbsession.cocktails = None
             self.dbsession.ingList = None
             self.dbsession.sysIngs = None
+            self.dbsession.inputs = None
         self.configdir = dirname
     def dbconnect(self):
         try:

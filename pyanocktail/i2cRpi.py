@@ -160,9 +160,9 @@ def playRecipe(ingredients_list, debug=False):
             addresses = ingredient[2]
             stepper = Stepper(addresses, gpio_ctrl[idx])
             if ingredient[3] < 0:
-                stepper.backward(-ingredient[3])
+                stepper.backward(-int(ingredient[3]*1000.0))
             else:
-                stepper.forward(ingredient[3])
+                stepper.forward(int(ingredient[3]*1000.0))
             for address in addresses:
                 gpio_ctrl[idx].output(address, 0)
         

@@ -259,7 +259,7 @@ def getPump(session, num):
     pump = []
     try :
         p = session.query(Pump).filter(Pump.pump == num).one()
-        pump = [p.type, int(p.i2cbus, 16),  int(p.i2caddr), p.ratio]
+        pump = [p.type, int(p.i2cbus, 16),  int(p.i2caddr), p.ratio, p.function]
         
     except Exception, err:
         #print(err.message)
@@ -294,6 +294,15 @@ def setPumps(session, pump_list):
         session.add(p)
     session.pumps = None
     session.sysIngs = None
+    
+def getInputs(session):
+    if session.inputs != None:
+        return session.inputs
+    inputs = {}
+    for gpio_in in session.query(Pump).filter(Pump.type == "gpio_in").all():
+        inputs[str(gpio_in.i2caddr)] = gpio_in.function
+    session.inputs = inputs
+    return session.inputs 
 
 def getIngredients(session):
     

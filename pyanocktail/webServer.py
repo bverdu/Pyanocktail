@@ -111,11 +111,12 @@ class WebService(StreamServerEndpointService):
         self.gpiofactory = GpioFactory(self.debug, self)
         self.gpio = self.gpiofactory.protocol(debug=self.debug)
         self.gpio.factory = self.gpiofactory
+        self.in_functions = dbUtils.getInputs(self.dbsession)
         exe = sys.executable
         gpioscriptpath = util.sibpath(__file__, "gpioprocess.py")
         gpioex = [exe, "-u"]
         gpioex.append(gpioscriptpath)
-        gpioargs = ['-i', "1", "2", "3", "4", "5"]
+        gpioargs = ['-i']+self.in_functions.keys()
         gpiocmd = gpioex + gpioargs
         if self.debug:
             log.msg(gpiocmd)
@@ -141,7 +142,7 @@ class WebService(StreamServerEndpointService):
         
     def set_command(self,command, args=''):
         '''
-        transmit or execute commands from web and ws interfaces
+        transmit or execute commands from websocket or gpio interfaces
         '''
         if command == 'stop':
             if self.playing:
@@ -175,7 +176,15 @@ class WebService(StreamServerEndpointService):
         elif command[:4] == 'test':
             cont = dbUtils.getPump(self.dbsession, command[6:])
             if len(cont) > 1:
-                if command[5] == '-':
+                if cont[0] == 'gpio_in':
+                    try:
+                        try:
+                            self.set_command(cont[4].split(",")[0],cont[4].split(",")[1])
+                        except:
+                            self.set_command(cont[4].split(",")[0])
+                    except Exception, err:
+                        print(err.message)
+                elif command[5] == '-':
                     switchcontrol(cont,debug=self.debug)
                     self.serving = False
                 else:
@@ -184,6 +193,13 @@ class WebService(StreamServerEndpointService):
             else:
                 log.msg("i2c error: no data found for pump n°:%s"
                         % command[6:])
+        else:
+            try:
+                fct = getattr(self,"sys_"+command)
+            except:
+                log.msg("unknow function: %s"% command)
+            else:
+                fct(args)
                 
     def get_command(self,command):
         '''
@@ -430,7 +446,7 @@ class MidiFactory(protocol.Factory):
         self.proto.write(data)
         
     def command(self,command,args=''):
-        self.proto.write(command+" "+args)
+        self.proto.write((command+" "+args).encode('utf-8'))
         
     def receive(self,c, data):
         if c in (0,1,3):
