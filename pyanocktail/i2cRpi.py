@@ -25,7 +25,7 @@ MCP23017_OLATB  = 0x15
 MCP23008_GPIOA  = 0x09
 MCP23008_GPPUA  = 0x06
 MCP23008_OLATA  = 0x0A
-FAKE = True
+FAKE = False
 
 class Internal_functions(object):
     
