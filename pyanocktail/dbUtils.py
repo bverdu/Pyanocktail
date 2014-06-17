@@ -98,7 +98,7 @@ class Ingredient(Base):
         self.qty_avail = qty_avail
         
     def __repr__(self):
-        return "<Ingredient('%s', \"%s\", pump n° %d)>" % (self.name,self.description, self.pump)
+        return "<Ingredient('%s', pump n° %d)>" % (self.name, self.pump)
     
     
 class Recipe(Base):
@@ -293,6 +293,7 @@ def setPumps(session, pump_list):
             p.function = row['fct']
         session.add(p)
     session.pumps = None
+    session.sysIngs = None
 
 def getIngredients(session):
     
@@ -308,6 +309,67 @@ def getIngredients(session):
                             'qty':int(ingredient.qty_avail)})
     session.ingredients = ingredients
     return ingredients
+
+def getSysRecipes(session):
+    
+    if session.sysIngs != None:
+        return session.sysIngs
+    startIng = []
+    endIng = []
+    fct_list = []
+    for sysIng, pump in session.query(Ingredient, Pump).filter(Ingredient.name.startswith("sys"),
+                                                                Pump.pump == Ingredient.pump).\
+                                                                order_by(Ingredient.alcool, Pump.pump).all():
+        ingtype = sysIng.name.split('_')
+        ing = []
+        ing.append(ingtype[1])
+        ing.append(int(pump.i2cbus, 16))
+        if ingtype[1] in ("stepper", "motor"):
+            for p in session.query(Pump).filter(Pump.description == pump.description).all():
+                if p.type in ("motor_ENA","stepper_ENA"):
+                    a = int(p.i2caddr)
+                elif p.type in ("motor_A","stepper_ENB"):
+                    b = int(p.i2caddr)
+                elif p.type in ("motor_B", "stepper_A1"):
+                    c = int(p.i2caddr)
+                elif p.type == "stepper_A2":
+                    d = int(p.i2caddr)
+                elif p.type == "stepper_B1":
+                    e = int(p.i2caddr)
+                elif p.type == "stepper_B2":
+                    f = int(p.i2caddr)
+            if ingtype[1] == "motor":
+                ing.append([a,b,c])
+            else:
+               ing.append([a,b,c,d,e,f])
+        else:
+            ing.append(int(pump.i2caddr))
+        if ingtype[3] == "bw":
+            ing.append(-float(int(sysIng.duration))/1000)
+        else:
+             ing.append(float(int(sysIng.duration))/1000)
+        ing.append(float(pump.ratio))
+        ing.append(str(pump.function))
+                        
+        if sysIng.alcool < 100:
+            if sysIng.alcool < 10:
+                startIng.append(ing)
+            else:
+                endIng.append(ing)
+        else:
+            fct_list.append(ing)
+            session.hasfct = True
+                        
+    
+    session.sysIngs = {'before':startIng,'after':endIng,'functions':fct_list}
+    if len(fct_list) == 0:
+        session.hasfct = False
+    print("***************************************************")
+    print(session.sysIngs)
+    print("***************************************************")
+    return session.sysIngs
+        
+        
 
 def getIngList(session):
     
@@ -344,6 +406,7 @@ def setIngredients(session, ing_list):
         session.add(ing)
     session.ingList = None
     session.ingredients = None
+    session.sysIngs = None
         
 def delIngredients(session, ing_list):
     
@@ -414,6 +477,9 @@ def setRecipe(session, cocktail):
 #                 i+=1
         
 def getServe(session, cocktail):
+    sysIng = getSysRecipes(session)
+    before = sysIng['before']
+    after = sysIng['after']
     serve = []
     for recipe, ingredient, pump in session.query(Recipe, Ingredient, Pump).\
                         filter(Recipe.ingredient_id == Ingredient.ingredient_id).\
@@ -426,6 +492,6 @@ def getServe(session, cocktail):
                       float(pump.ratio), 
                       str(pump.function)])
         
-    return serve
+    return before+serve+after
 
         

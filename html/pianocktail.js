@@ -30,7 +30,7 @@ var lastev;
 var changelist = {};
 var updatedrows = [];
 var deleted = [];
-var sysvalues = ["fake_gpio", "fake_pwm", "gpio", "pwm"];
+var sysvalues = ["gpio", "gpio_in", "pwm", "stepper_ENA", "stepper_ENB", "stepper_A1", "stepper_A2", "stepper_B1", "stepper_B2", "motor_ENA", "motor_A", "motor_B"];
 
 window.onbeforeunload = checkData;
 
@@ -1259,7 +1259,6 @@ function getPumps() {
 function sendPumps() {
 
 	var updated = [];
-	var updrow = {};
 	if (updatedrows.length > 0){
 	for (var i = 0; i < updatedrows.length; i++) {
 		key = updatedrows[i];
@@ -1269,6 +1268,7 @@ function sendPumps() {
 			name = rw[0].value;
 			console.log(name);
 			if (name != 'New') {
+				var updrow = {};
 				updrow.name = name;
 				updrow.alcool = rw[1].value;
 				updrow.pump = rw[2].value;
@@ -1280,6 +1280,7 @@ function sendPumps() {
 		else{
 			name = document.getElementById(key).getElementsByTagName("div")[0].innerHTML;
 			console.log(name);
+			var updrow = {};
 			updrow.name = name;
 			updrow.alcool = rw[0].value;
 			updrow.pump = rw[1].value;

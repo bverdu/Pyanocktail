@@ -52,6 +52,7 @@ class WebService(StreamServerEndpointService):
         self.recording = False
         self.analysing = False
         self.serving = False
+        self.opened = False
         self.analyzed = {}
         self.analyzed['cocktail'] = 0
         self.analyzed['result'] = ''
@@ -149,6 +150,8 @@ class WebService(StreamServerEndpointService):
             if self.recording:
                 self.midifactory.command('record 0')
                 self.recording = False
+            if self.opened:
+                pass
         elif command in ('play','record'):
             self.midifactory.command(command+' 1')
             if command == 'play':
