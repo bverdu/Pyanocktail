@@ -25,8 +25,7 @@ MCP23017_OLATB  = 0x15
 MCP23008_GPIOA  = 0x09
 MCP23008_GPPUA  = 0x06
 MCP23008_OLATA  = 0x0A
-FAKE = False
-
+FAKE = True
 class Internal_functions(object):
     
     @staticmethod
@@ -171,40 +170,48 @@ def playRecipe(ingredients_list, debug=False):
             continuous motor
             '''
             try:
-                idx = init_gpio.index(ingredient[1])
+                idx = init_gpio.index(ingredient[1][1])
             except ValueError:
-                gpio_ctrl.append(Rpi_MCP230XX(address=ingredient[1], num_gpios=16))
-                init_gpio.append(ingredient[1])
+                gpio_ctrl.append(Rpi_MCP230XX(address=ingredient[1][1], num_gpios=16))
+                init_gpio.append(ingredient[1][1])
                 idx = len(init_gpio) - 1
             addresses = ingredient[2]
             motor = Motor(addresses[1:],gpio_ctrl[idx])
             speed = abs(ingredient[4])
-            if ingredient[3] < 0:
-                motor.backward()
-            else:
-                motor.forward()
             try:
-                idx = init_pwm.index(ingredient[1])
+                idx = init_pwm.index(ingredient[1][0])
             except ValueError:
-                pwm_ctrl.append(Rpi_PWM(address=ingredient[1], debug=debug))
-                init_pwm.append(ingredient[1])
+                pwm_ctrl.append(Rpi_PWM(address=ingredient[1][0], debug=debug))
+                init_pwm.append(ingredient[1][0])
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
             if ingredient[5] not in ('None',''):
                 try:
                     fct = getattr(Internal_functions,ingredient[5])
-                    res = fct(ingredient[3])
+                    res = fct(float(abs(ingredient[3])))
                     for ratio, duration in res:
                         print("duration = %f" % duration)
                         pwm_ctrl[idx].setPWM(addresses[0], int(ratio*ingredient[4]*1024.0), 0)
+                        if ingredient[3] < 0:
+                            motor.backward()
+                        else:
+                            motor.forward()
                         time.sleep(duration)
                 except Exception, e:
                     print(e.message)
                     pwm_ctrl[idx].setPWM(addresses[0], int(ingredient[4]*1024.0), 0)
-                    time.sleep(ingredient[3])
+                    if float(ingredient[3]) < 0:
+                        motor.backward()
+                    else:
+                        motor.forward()
+                    time.sleep(float(abs(ingredient[3])))
             else:
                 pwm_ctrl[idx].setPWM(addresses[0], int(speed*1024.0), 0)
-                time.sleep(ingredient[3])
+                if ingredient[3] < 0:
+                    motor.backward()
+                else:
+                    motor.forward()
+                time.sleep(float(abs(ingredient[3])))
             motor.stop()        
 
 class Rpi_Exception(Exception):

@@ -19,8 +19,14 @@ var tim;
 var chrono;
 var port = parseInt(window.location.port);
 var hostname = window.location.hostname;
-var Uri = "http://" + hostname + ":" + port + "/";
-var wsUri = "ws://" + hostname + ":" + port + "/ws";
+if (isNaN(port)){
+	  var wsUri = "ws://" + hostname + "/ws";
+	  var Uri = "http://" + hostname + "/";
+	}
+	else {
+	  var Uri = "http://" + hostname + ":" + port + "/";
+	  var wsUri = "ws://" + hostname + ":" + port + "/ws";
+	}
 var output;
 var websocket;
 var down = false;

@@ -332,13 +332,18 @@ def getSysRecipes(session):
         ingtype = sysIng.name.split('_')
         ing = []
         ing.append(ingtype[1])
-        ing.append(int(pump.i2cbus, 16))
+        if ingtype[1] == "motor":
+            ing.append([int(pump.i2cbus, 16),0])
+        else:
+            ing.append(int(pump.i2cbus, 16))
         if ingtype[1] in ("stepper", "motor"):
             for p in session.query(Pump).filter(Pump.description == pump.description).all():
                 if p.type in ("motor_ENA","stepper_ENA"):
                     a = int(p.i2caddr)
                 elif p.type in ("motor_A","stepper_ENB"):
                     b = int(p.i2caddr)
+                    if p.type == "motor_A":
+                        ing[1][1] = int(p.i2cbus, 16)
                 elif p.type in ("motor_B", "stepper_A1"):
                     c = int(p.i2caddr)
                 elif p.type == "stepper_A2":
@@ -373,9 +378,9 @@ def getSysRecipes(session):
     session.sysIngs = {'before':startIng,'after':endIng,'functions':fct_list}
     if len(fct_list) == 0:
         session.hasfct = False
-    print("***************************************************")
-    print(session.sysIngs)
-    print("***************************************************")
+#     print("***************************************************")
+#     print(session.sysIngs)
+#     print("***************************************************")
     return session.sysIngs
         
         
