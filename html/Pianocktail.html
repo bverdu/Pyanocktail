@@ -44,11 +44,11 @@
 					<canvas id="control_panel" width="600px" height="300px"></canvas>
 					<aside>
 						<div id="command_buttons">
-							<button id="stop" type="button" onclick="buttonclick(id)" ontouchstart="buttonclick(0)">
+							<button id="stop" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								Stop
 							</button>
 							
-							<button id="record" type="button" onclick="buttonclick(id)">
+							<button id="record" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								Record
 							</button>
 							
@@ -60,11 +60,11 @@
 				</article>
 				<aside>
 						<div id="command_buttons2">
-							<button id="play" type="button" onclick="buttonclick(id)">
+							<button id="play" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								Play
 							</button>
 							
-							<button id="cocktail" type="button" onclick="buttonclick(id)">
+							<button id="cocktail" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								Cocktail
 							</button>
 							<a href="notes.pckt" target="_BLANK">

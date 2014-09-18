@@ -219,6 +219,7 @@ class Seq(Sequencer):
                 self._write(self.recordfile)
                 print('0 Recorded')
             else:
+                self.start_time = time()
                 self.records = []
                 self.recordfile = []
                 self.recording = True

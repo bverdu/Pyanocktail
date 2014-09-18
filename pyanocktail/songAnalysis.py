@@ -15,7 +15,7 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
     result = {}
     res = []
     cocktail = ''
-    c = [0, 999.99]
+    c = []
 #     print("*****"+output)
     for line in output.split("\n"):
         if debug:
@@ -66,11 +66,13 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
          + math.fabs(float(enervement)*nervind - float(recipe['score3']))
         if debug:
             print(recipe['name']+" score = "+str(score))
-        if score < c[1]:
-#             print("rr")
-            c[0] = int(recipe['id'])
-#             print("rrr")
-            c[1] = score
+        if len(c):
+            if score < c[1]:
+                c[0] = int(recipe['id'])
+                c[1] = score
+                cocktail = recipe['name']
+        else:
+            c = [int(recipe['id']),score]
             cocktail = recipe['name']
     res.append("Cocktail choisi : "+cocktail)
     if debug:

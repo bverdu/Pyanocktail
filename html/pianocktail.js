@@ -4,6 +4,7 @@
  * @author Bertrand Verdu
  */
 
+var touch= false;
 var rb = 0;
 var pb = 0;
 var cb = 0;
@@ -180,7 +181,8 @@ function writeToScreen(message) {
 
 function drawKeyboard() {
 	canv = document.getElementById('piano_keyboard');
-	if (isTouchDevice()) {
+	touch = isTouchDevice()
+	if (touch) {
 		// writeToScreen("touch");
 		canv.addEventListener('touchstart', notedown, true);
 		canv.addEventListener('touchend', noteup, true);
@@ -388,6 +390,7 @@ function buttonup(id) {
 }
 
 function buttonclick(buttonid) {
+	if (touch == false){
 	console.log("button " + buttonid + " clicked rb= " + rb);
 	doSend(buttonid);
 	if (buttonid == "stop") {
@@ -409,7 +412,33 @@ function buttonclick(buttonid) {
 			rb = 1;
 		}
 
+	}}
+}
+
+function buttondown(buttonid) {
+	if (touch){
+	console.log("button " + buttonid + " touched rb= " + rb);
+	doSend(buttonid);
+	if (buttonid == "stop") {
+		if (rb == 1) {
+			rb = 0;
+		}
+		if (pb == 1) {
+			pb = 0;
+		}
 	}
+	if (buttonid == "play") {
+		if (pb == 0) {
+			pb = 1;
+		}
+
+	}
+	if (buttonid == "record") {
+		if (rb == 0) {
+			rb = 1;
+		}
+
+	}}
 }
 
 function getevtPos(canva, evt) {
