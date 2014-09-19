@@ -130,6 +130,9 @@ class WebService(StreamServerEndpointService):
         self.conf.save(self.conf.configdir)
         self.dbsession.commit()
         
+    def badResult(self):
+        self.wsfactory.sendmessage(u'On ne sert pas les fainéants !!!\n')
+        
     def showResult(self, result):
         '''
         Display analysis result to ws status window
@@ -290,6 +293,9 @@ class WebService(StreamServerEndpointService):
     def analyze(self, tabs):
         if self.debug:
             log.msg("Analyse Python")
+        if len(self.notes) < 4:
+            self.badResult()
+            return 0
 #         d = threads.deferToThread(PIANOCKTAIL, *(os.path.join(self.conf.installdir,"scripts","current.pckt"),self.notes))
         d = threads.deferToThread(PIANOCKTAIL, self.notes)
         d.addCallback(format_output)
@@ -355,6 +361,9 @@ class PyanoTCP(WebSocketServerProtocol):
     def onMessage(self, data, binary):
         if self.factory.debug:
             log.msg('data from ws: '+data)
+        if data == 'status':
+            self.send(self.factory.lastmsg)
+            return
         d = self.factory.wsReceived(data)
         
         def onError(err):

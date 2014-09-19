@@ -102,7 +102,7 @@ class player(Thread):
                 if self.running == False:
                     break
                 i += 1
-                if i > 10:
+                if i > 20:
                     self.seq.sync_output_queue()
                     i = 0
                         

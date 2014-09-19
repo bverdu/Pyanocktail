@@ -24,33 +24,33 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
             duree = line.split()[0].split('=')[1]
             tristesse = line.split()[1].split('=')[1]
             enervement = line.split()[2].split('=')[1]
-            res.append("Duree du morceau = " + duree + " secondes")
-            res.append('tristesse = '+tristesse)
-            res.append('enervement = '+enervement)
+            res.append(("Durée du morceau = " + duree + " secondes").decode('utf-8'))
+            res.append(('Tristesse = '+tristesse).decode('utf-8'))
+            res.append(('Énervement = '+enervement).decode('utf-8'))
             if debug:
-                print("Duree du morceau = " + duree)
+                print(("Durée du morceau = " + duree).decode('utf-8'))
             if debug:
                 print("tristesse returned = "+tristesse)
         elif line.startswith(' Complexite'):
             complexite = line.split()[0].split('=')[1]
             metrique = line.split()[1].split('=')[1]
             tonalite = line.split()[2].split('=')[1]
-            res.append('complexite = '+complexite)
+            res.append(('Complexité = '+complexite).decode('utf-8'))
             if int(metrique.strip('.')) == 2:
-                res.append("Metrique = Binaire")
+                res.append(("Métrique = Binaire").decode('utf-8'))
                 if debug:
-                    print("Metrique = Binaire")
+                    print(("Métrique = Binaire").decode('utf-8'))
             elif int(metrique.strip('.')) == 3:
-                res.append("Metrique = Ternaire")
+                res.append(("Métrique = Ternaire").decode('utf-8'))
                 if debug:
-                    print("Metrique = Ternaire")
+                    print(("Métrique = Ternaire").decode('utf-8'))
             else:
-                res.append("Metrique incoherente....")
+                res.append(("Métrique incoherente....").decode('utf-8'))
                 if debug:
-                    print("Metrique incoherente....")
-            res.append("Tonalite = "+tonalite_tab[int(tonalite.strip('.'))-1])
+                    print(("Métrique incoherente....").decode('utf-8'))
+            res.append(("Tonalité = "+tonalite_tab[int(tonalite.strip('.'))-1]).decode('utf-8'))
             if debug:
-                print("Tonalite = " +tonalite_tab[int(tonalite[0].strip('.')) - 1])
+                print(("Tonalité = " +tonalite_tab[int(tonalite[0].strip('.')) - 1]).decode('utf-8'))
         elif line.startswith(' Tempo'):
             tempo = line.split()[0].split('=')[1]
             cock = line.split()[1].split('=')[1:]
@@ -65,7 +65,7 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
          + math.fabs(float(tristesse)*tristind - float(recipe['score2']))\
          + math.fabs(float(enervement)*nervind - float(recipe['score3']))
         if debug:
-            print(recipe['name']+" score = "+str(score))
+            print((recipe['name']+" score = "+str(score)).encode('utf-8'))
         if len(c):
             if score < c[1]:
                 c[0] = int(recipe['id'])
@@ -73,10 +73,10 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
                 cocktail = recipe['name']
         else:
             c = [int(recipe['id']),score]
-            cocktail = recipe['name']
-    res.append("Cocktail choisi : "+cocktail)
+            cocktail = recipe['name'].decode('utf-8')
+    res.append(("Cocktail choisi : "+cocktail).decode('utf-8'))
     if debug:
-        print("cocktail found = "+cocktail+" score = "+str(c[1]))
+        print(("cocktail found = "+cocktail+" score = "+str(c[1])).decode('utf-8'))
         
     result['cocktail'] = c[0]
     result['result'] = res

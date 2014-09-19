@@ -319,6 +319,7 @@ function onOpen(evt) {
 		context.fillStyle = "#008a00";
 		writeToScreen("CONNECTED");
 		setTimeout('doSend("status")', 50);
+		console.log("Main page")
 	}
 	console.log("open")
 }
@@ -328,6 +329,7 @@ function onClose(evt) {
 		context.fillStyle = "#e81010";
 		writeToScreen("DISCONNECTED");
 	}
+	delete websocket;
 }
 
 function onMessage(evt) {
@@ -358,8 +360,11 @@ function onMessage(evt) {
 }
 
 function onError(evt) {
-	context.fillStyle = "#e81010";
-	writeToScreen('ERROR: ' + evt.data);
+	if (typeof context != 'undefined'){
+		context.fillStyle = "#e81010";
+		writeToScreen('ERROR: ' + evt.data);
+		}
+	console.log(evt.data)
 }
 
 function doSend(message) {
@@ -756,8 +761,8 @@ function setData(moddata) {
 
 function getConf() {
 
-	webSocketManager();
 	getInputKeys();
+	touch = isTouchDevice();
 //	console.log("get_conf");
 	pumpmax = 0;
 	var req = new XMLHttpRequest();
@@ -912,6 +917,7 @@ function getConf() {
 	req.setRequestHeader("Content-length", params.length);
 	console.log(params);
 	req.send(params);
+	webSocketManager();
 };
 
 function newSysLine(num, type, description, bus, channel, ratio, funct, avail) {
@@ -1041,25 +1047,47 @@ function newSysLine(num, type, description, bus, channel, ratio, funct, avail) {
 	row.appendChild(cell);
 	var cell = document.createElement("td");
 	cell.setAttribute("contenteditable", false);
-	var btn = document.createElement("button");
-	btn.setAttribute("id", num);
-	if (isTouchDevice()) {
-		btn.setAttribute("onTouchStart", "doSend(\"test ".concat(" " + num
-				+ "\")"));
-		btn.setAttribute("onTouchEnd", "doSend(\"test ".concat("-" + num
-				+ "\")"));
+//	var btn = document.createElement("Button");
+//	btn.setAttribute("contenteditable", false);
+	cell.setAttribute("id", num);
+	cell.setAttribute("style", "background-color: green; -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select: none; width: 80px;");
+	cell.setAttribute("unselectable", "on")
+	cell.setAttribute("onselectstart", "return false;")
+	if (touch) {
+		cell.setAttribute("onTouchStart", "sysTest(1, ".concat(num + ")"));
+		cell.setAttribute("onTouchEnd", "sysTest(0, ".concat(num + ")"));
 	} else {
-		btn.setAttribute("onMouseDown", "doSend(\"test ".concat(" " + num
-				+ "\")"));
-		btn.setAttribute("onMouseUp", "doSend(\"test "
-				.concat("-" + num + "\")"));
+		cell.setAttribute("onMouseDown", "sysTest(1, ".concat(num + ")"));
+//		cell.setAttribute("onMouseDown", "doSend(\"test ".concat(" " + num
+//				+ "\")"));
+		cell.setAttribute("onMouseUp", "sysTest(0, ".concat(num + ")"));
 	}
 	txt = document.createTextNode("Test");
-	btn.appendChild(txt);
-	cell.appendChild(btn);
+	cell.appendChild(txt);
+//	cell.appendChild(btn);
 	row.appendChild(cell);
 	table.appendChild(row);
 };
+
+function sysTest(type, row){
+//	console.log(type);
+//	console.log(row);
+	if (type == 1){
+		doSend("test ".concat(" " + row));
+		var cell = document.getElementById(row);
+		cell.setAttribute("style", 
+				"background-color: red; -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select: one; width: 80px;");
+	}
+	else {
+		doSend("test ".concat("-" + row));
+		var cell = document.getElementById(row);
+		cell.setAttribute(
+						"style",
+						"background-color: green; -moz-user-select: none; -webkit-user-select: none; -ms-user-select:none; user-select: one; width: 80px;");
+	}
+	
+	
+}
 
 function setConf() {
 
@@ -1237,10 +1265,10 @@ function setRow(num) {
 }
 
 function changedCell(row) {
-	console.log("kikouu" + row);
-	console.log(updatedrows)
+//	console.log("kikouu" + row);
+//	console.log(updatedrows)
 	if (updatedrows.indexOf(row) == -1) {
-		console.log(row);
+//		console.log(row);
 		updatedrows.push(row);
 		switchEditButtons(1);
 	}
