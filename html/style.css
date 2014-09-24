@@ -25,6 +25,11 @@ article{
 	width: 80%;
 }
 
+/*button
+{
+	background-color: transparent;
+}*/
+
 header
 {
 	position: relative;
@@ -87,12 +92,13 @@ meter
 	border-radius: 6px;
 	text-align: center;
 }
+
 #command_bar button
 {
 	height: 50px;
 	width: 100px;
 }
-nav
+header nav
 {
    	/*margin-top:1%;*/
    	/*position:absolute;*/
@@ -128,6 +134,15 @@ nav a:hover
     color: #760001;
     border-bottom: 3px solid #760001;
 }
+
+header button
+{
+	height: 70px;
+	width: 70px;
+	margin-left: 45px;
+	margin-top: 3px;
+	background-color: transparent;
+	}
 #command_panel
 {
 	margin-top: 5px;

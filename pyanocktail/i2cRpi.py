@@ -361,20 +361,25 @@ class Rpi_MCP230XX(object):
     def __init__(self, address, num_gpios):
         if FAKE == False:
             assert num_gpios >= 0 and num_gpios <= 16, "Number of GPIOs must be between 0 and 16"
-            self.i2c = Rpi_I2C(address=address)
-            self.num_gpios = num_gpios
-            # set defaults
-            if num_gpios <= 8:
-                self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
-                self.direction = self.i2c.readU8(MCP23017_IODIRA)
-                self.i2c.write8(MCP23008_GPPUA, 0x00)
-            elif num_gpios > 8 and num_gpios <= 16:
-                self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
-                self.i2c.write8(MCP23017_IODIRB, 0xFF)  # all inputs on port B
-                self.direction = self.i2c.readU8(MCP23017_IODIRA)
-                self.direction |= self.i2c.readU8(MCP23017_IODIRB) << 8
-                self.i2c.write8(MCP23017_GPPUA, 0x00)
-                self.i2c.write8(MCP23017_GPPUB, 0x00)
+            try:
+                self.i2c = Rpi_I2C(address=address)
+            except:
+                global FAKE
+                FAKE = True
+            else:
+                self.num_gpios = num_gpios
+                # set defaults
+                if num_gpios <= 8:
+                    self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
+                    self.direction = self.i2c.readU8(MCP23017_IODIRA)
+                    self.i2c.write8(MCP23008_GPPUA, 0x00)
+                elif num_gpios > 8 and num_gpios <= 16:
+                    self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
+                    self.i2c.write8(MCP23017_IODIRB, 0xFF)  # all inputs on port B
+                    self.direction = self.i2c.readU8(MCP23017_IODIRA)
+                    self.direction |= self.i2c.readU8(MCP23017_IODIRB) << 8
+                    self.i2c.write8(MCP23017_GPPUA, 0x00)
+                    self.i2c.write8(MCP23017_GPPUB, 0x00)
         self.address = address
 
     def _changebit(self, bitmap, bit, value):

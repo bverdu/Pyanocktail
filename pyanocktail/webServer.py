@@ -170,12 +170,13 @@ class WebService(StreamServerEndpointService):
             if self.analyzed['cocktail'] > 0:
                 d = threads.deferToThread(self.serve, *(self.analyzed['cocktail'],))
                 d.addCallback(self.wsfactory.sendmessage)
+                self.wsfactory.sendmessage(u'Service en cours...\n')
             else:
                 if self.recording:
                     self.midifactory.command('record 0')
                     self.recording = False
-                if self.analyzed['cocktail'] == 0:
-                    reactor.callLater(1, self.set_command, 'cocktail') #@UndefinedVariable
+                    if self.analyzed['cocktail'] == 0 :
+                        reactor.callLater(1, self.set_command, 'cocktail') #@UndefinedVariable
         elif command[:4] == 'test':
             cont = dbUtils.getPump(self.dbsession, command[6:])
             if len(cont) > 1:
@@ -301,6 +302,21 @@ class WebService(StreamServerEndpointService):
         d.addCallback(format_output)
         d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
         d.addCallback(self.showResult)
+        
+    def sys_shutdown(self,args):
+        if self.debug:
+            log.msg("Shutdown requested")
+        d = utils.getProcessValue('/usr/bin/systemctl', ['poweroff'])
+#         d = utils.getProcessValue('/usr/bin/true')
+        d.addCallback(self.shutdown)
+        
+    def shutdown(self, value):
+        if self.debug:
+            log.msg("Shutdown return value: %d" % value)
+        if value == 0:
+            self.wsfactory.sendmessage(u'Shutdown in progress...\n')
+        else:
+            self.wsfactory.sendmessage(u'Shutdown error :(\n')
         
 class SeqFactory(WebSocketServerFactory):
     '''
