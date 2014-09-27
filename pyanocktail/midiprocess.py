@@ -10,7 +10,7 @@ Interactive mode to capture commands and fake midi notes from stdin
 '''
 
 from __future__ import print_function
-from threading import Thread
+from threading import Thread, Event
 import select
 import sys
 from os import getpid, read
@@ -47,20 +47,15 @@ options[('-f', '--file')] = {'dest':'file_name', 'default':'current.pckt', 'help
 
 class player(Thread):
     
-    def __init__(self, seq, notes):
+    def __init__(self, e_stop, seq):
         self.seq=seq
-        self.notes = notes
+        self.notes = seq.records
         self.running = False
-        Thread.__init__(self)
-        
-    def run(self):
-        self.running = True
-        self.paused = False
         q = self.seq.queue
         self.seq.start_queue(q)
         tempo, ppq = self.seq.queue_tempo(q)
         print('tempo: %d ppq: %d' % (tempo, ppq), file=sys.stderr)
-        mdilist = []
+        self.mdilist = []
         mdindex = []
         delay = float(self.notes[0].split()[0])
         for data in self.notes:
@@ -71,55 +66,73 @@ class player(Thread):
                     print('double noteon', file=sys.stderr)
                 except:
                     mdindex.append([int(note[2]),1])
-                    mdilist.append([int(note[2]), int(note[3]), float(note[0])-delay, float(note[0])-delay,64])
+                    self.mdilist.append([int(note[2]), int(note[3]), float(note[0])-delay, float(note[0])-delay,64])
             elif int(note[1]) == 0:
                 try:
                     k = mdindex.index([int(note[2]),1])
-                    mdilist[k][3]=float(note[0])-delay -mdilist[k][3]
-                    mdilist[k][4]=int(note[3])
+                    self.mdilist[k][3]=float(note[0])-delay - self.mdilist[k][3]
+                    self.mdilist[k][4]=int(note[3])
                     mdindex[k] = [int(note[2]),0]
                 except:
                     print('orphan note_off', file=sys.stderr)
             else:
                 print('controller event', file=sys.stderr)
+        Thread.__init__(self, target=self.play, args=(e_stop,))
+         
+    def play(self, e_stop):
+        self.running = True
+        self.paused = False
+        self.out = False
         i = 0
-        for event in mdilist:
-            if self.running:
-                while self.paused:
-                    sleep(0.5)
-                evt = SeqEvent(SEQ_EVENT_NOTE)
-                evt.source = (self.seq.client_id, self.seq.outportId)
-                evt.dest = (self.seq.outClientId, self.seq.outClientPort)
-                evt.timestamp = SEQ_TIME_STAMP_REAL
-                evt.time = float(event[2])/1000.000
+        n= 0
+        while len(self.mdilist) > 0 :
+#             print('len of mdilist: %d' % len(self.mdilist))
+            sleep(0.001)
+            event = self.mdilist.pop(0)
+            evt = SeqEvent(SEQ_EVENT_NOTE)
+            evt.source = (self.seq.client_id, self.seq.outportId)
+            evt.dest = (self.seq.outClientId, self.seq.outClientPort)
+            evt.timestamp = SEQ_TIME_STAMP_REAL
+            evt.time = float(event[2])/1000.000
 #                 print(event[3])
-    #                 evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : event[3]*t , 'note.off_velocity' : event[4]})
-                evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : int(event[3]) , 'note.off_velocity' : event[4]})
-                evt.queue = q
-                print('play event: %s %s' % (evt, evt.get_data()), file=sys.stderr)
-                self.seq.output_event(evt)
-                self.seq.drain_output()
-                if self.running == False:
+#                 evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : event[3]*t , 'note.off_velocity' : event[4]})
+            evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : int(event[3]) , 'note.off_velocity' : event[4]})
+            evt.queue = self.seq.queue
+#             print('play event: %s %s' % (evt, evt.get_data()), file=sys.stderr)
+            self.seq.output_event(evt)
+            self.seq.drain_output()
+            i += 1
+            if i > 20:
+                n += 1
+#                 print('boucle %d' % n)
+#                 print('go')
+                self.seq.sync_output_queue()
+                if e_stop.is_set():
+                    self.seq.stop_queue(self.seq.queue)
+#                     print("exit")
+                    self.out = True
                     break
-                i += 1
-                if i > 20:
-                    self.seq.sync_output_queue()
-                    i = 0
-                        
-        if self.running:
+                i = 0
+#         print("end of thread")
+        if self.out == False:
             self.seq.sync_output_queue()
-        self.seq.stop_queue(q)
+            self.seq.stop_queue(self.seq.queue)
 #         self.seq.delete_queue(q)
         self.running = False
         self.seq.playing = False
         print('0 Ready')
-    def stop(self):
-        self.running = False
-    def pause(self):
-        if self.paused:
-            self.paused = False
-        else:
-            self.paused = True
+        e_stop.clear()
+        
+#     def stop(self, event):
+#         self.running = False
+#         self.mdilist = []
+# #         event.set()
+#     def pause(self, event):
+#         if self.paused:
+#             self.paused = False
+# #             event.set()
+#         else:
+#             self.paused = True
 
 class Seq(Sequencer):
     
@@ -142,6 +155,8 @@ class Seq(Sequencer):
                                                  SEQ_PORT_TYPE_APPLICATION |
                                                  SEQ_PORT_TYPE_MIDI_GENERIC ,
                                                  SEQ_PORT_CAP_READ | SEQ_PORT_CAP_SUBS_READ)
+#         self.playerEvent = Event()
+#         self.playerExitEvent = Event()
         
     def list(self,list_type):
         '''list inputs, outputs or both midi ports on system
@@ -228,27 +243,30 @@ class Seq(Sequencer):
                 
     def play(self, state):
         if int(state) == 1:
-            if self.playing :
-                print("3 Pause")
-                self.player.pause()
+            if self.playing:
+                if self.paused:
+                    self.paused = False
+                    print("1 Playing")
+                else:
+                    print("3 Paused")
+                    self.paused = True
             else:
-                print("1 Playing")
-                self.player = player(self, self.records)
-                self.player.start()
+                self.playerExitEvent = Event()
                 self.playing = True
+                self.paused = False
+                self.player = player(self.playerExitEvent, self)
+                print("1 Playing")
+                self.player.start()
         else:
-            print("0 Stopped")
-            try:
-                self.player.stop()
-                self.player.join()
-            except:
-                print('player already stopped', file=sys.stderr)
+            print("0 Stopping")
+            self.playerExitEvent.set()
             self.playing = False
+            self.player.join()
         
     def load(self, filename):
         try:
             f = open(filename, 'r')
-            self.records = f.readlines
+            self.records = f.readlines()
         except:
             print('Unable to open file: %s' % filename, file=sys.stderr)
         
@@ -350,7 +368,9 @@ class Seq(Sequencer):
     def start(self,command_in,auto,filename):
         self.recording = False
         self.playing = False
+        self.paused = False
         self.start_time = time()
+        self.load(filename)
         poller = select.poll()
         self.filename = filename
         print('Sequenceur Midi %s started on pid %d' % (self.clientname, getpid()), file=sys.stderr)
@@ -378,6 +398,7 @@ class Seq(Sequencer):
             else:
                 for event in events:
                     self._handleMidiEvent(event, event_time)
+
 
 if __name__ == '__main__':
     parser = OptionParser(usage='usage: %prog [options] ')
