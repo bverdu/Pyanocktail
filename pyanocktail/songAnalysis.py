@@ -28,7 +28,7 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
             res.append(('Tristesse = '+tristesse).decode('utf-8'))
             res.append(('Énervement = '+enervement).decode('utf-8'))
             if debug:
-                print(("Durée du morceau = " + duree).decode('utf-8'))
+                print("Durée du morceau = " + duree)
             if debug:
                 print("tristesse returned = "+tristesse)
         elif line.startswith(' Complexite'):
@@ -39,31 +39,48 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
             if int(metrique.strip('.')) == 2:
                 res.append(("Métrique = Binaire").decode('utf-8'))
                 if debug:
-                    print(("Métrique = Binaire").decode('utf-8'))
+                    print("Métrique = Binaire")
             elif int(metrique.strip('.')) == 3:
                 res.append(("Métrique = Ternaire").decode('utf-8'))
                 if debug:
-                    print(("Métrique = Ternaire").decode('utf-8'))
+                    print("Métrique = Ternaire")
             else:
                 res.append(("Métrique incoherente....").decode('utf-8'))
                 if debug:
-                    print(("Métrique incoherente....").decode('utf-8'))
+                    print("Métrique incoherente....")
             res.append(("Tonalité = "+tonalite_tab[int(tonalite.strip('.'))-1]).decode('utf-8'))
             if debug:
-                print(("Tonalité = " +tonalite_tab[int(tonalite[0].strip('.')) - 1]).decode('utf-8'))
+                print(("Tonalité = " +tonalite_tab[int(tonalite[0].strip('.')) - 1]))
         elif line.startswith(' Tempo'):
             tempo = line.split()[0].split('=')[1]
-            cock = line.split()[1].split('=')[1:]
+#             cock = line.split()[1].split('=')[1:]
             res.append("Tempo = "+ tempo +" bpm")
             if debug:
                 print("Tempo = " + tempo + " bpm")
-    
+                
+    pass1 = []
+    size = int(len(cocktail)/4)
+    if size == 0:
+        size = 1
     for recipe in cocktails:
         if recipe['available'] != 'OK':
             continue
+        score = math.fabs(float(tristesse)*tristind - float(recipe['score2']))
+        if len(pass1) < 5:
+            pass1.append([recipe, score])
+        else:
+            for recip in pass1:
+                if score < recip[1]:
+                    recip[0] = recipe
+                    recip[1] = score
+    pass2 = []
+    for r in pass1:
+        pass2.append(r[0])
+    for recipe in pass2:
+        if recipe['available'] != 'OK':
+            continue
         score = math.fabs(float(complexite)*compind - float(recipe['score1']))\
-         + math.fabs(float(tristesse)*tristind - float(recipe['score2']))\
-         + math.fabs(float(enervement)*nervind - float(recipe['score3']))
+        + math.fabs(float(enervement)*nervind - float(recipe['score3']))
         if debug:
             print((recipe['name']+" score = "+str(score)).encode('utf-8'))
         if len(c):
@@ -74,6 +91,23 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
         else:
             c = [int(recipe['id']),score]
             cocktail = recipe['name'].decode('utf-8')
+    
+#     for recipe in cocktails:
+#         if recipe['available'] != 'OK':
+#             continue
+#         score = math.fabs(float(complexite)*compind - float(recipe['score1']))\
+#          + math.fabs(float(tristesse)*tristind - float(recipe['score2']))\
+#          + math.fabs(float(enervement)*nervind - float(recipe['score3']))
+#         if debug:
+#             print((recipe['name']+" score = "+str(score)).encode('utf-8'))
+#         if len(c):
+#             if score < c[1]:
+#                 c[0] = int(recipe['id'])
+#                 c[1] = score
+#                 cocktail = recipe['name']
+#         else:
+#             c = [int(recipe['id']),score]
+#             cocktail = recipe['name'].decode('utf-8')
     res.append(("Cocktail choisi : "+cocktail).decode('utf-8'))
     if debug:
         print(("cocktail found = "+cocktail+" score = "+str(c[1])).decode('utf-8'))

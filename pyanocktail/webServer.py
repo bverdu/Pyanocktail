@@ -288,7 +288,7 @@ class WebService(StreamServerEndpointService):
                                    args=pargs,
                                    path=os.path.join(self.conf.installdir,"scripts"),
                                    env=en, errortoo=True)
-        d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
+        d.addCallback(filter_process_result, *(tabs,float(self.conf.complexind),float(self.conf.tristind),float(self.conf.nervind),self.debug))
         d.addCallback(self.showResult)
         
     def analyze(self, tabs):
@@ -300,7 +300,7 @@ class WebService(StreamServerEndpointService):
 #         d = threads.deferToThread(PIANOCKTAIL, *(os.path.join(self.conf.installdir,"scripts","current.pckt"),self.notes))
         d = threads.deferToThread(PIANOCKTAIL, self.notes)
         d.addCallback(format_output)
-        d.addCallback(filter_process_result, *(tabs,self.conf.complexind,self.conf.tristind,self.conf.nervind,self.debug))
+        d.addCallback(filter_process_result, *(tabs,float(self.conf.complexind),float(self.conf.tristind),float(self.conf.nervind),self.debug))
         d.addCallback(self.showResult)
         
     def sys_shutdown(self,args):

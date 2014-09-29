@@ -76,6 +76,10 @@ class mainConfig:
             dbstring = self.dbconnectstring
         except:
             dbtype = 'sqlite'
+            try:
+                os.mkdir(os.path.join(os.path.abspath(self.installdir),'db'))
+            except:
+                print("db path already created, skipping")
             dbstring = os.path.join(os.path.abspath(self.installdir),'db','pianocktail.db')
         self.dbtype = dbtype
         self.dbconnectstring = dbstring
