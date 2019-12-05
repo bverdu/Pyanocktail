@@ -8,7 +8,7 @@ Created on 11 oct. 2013
 I2c service - Raspberry_Pi specific - in charge of i2c communication
 Courtesy Adafruit project
 '''
-from __future__ import division 
+from __future__ import division
 import time
 import math
 import smbus
@@ -16,29 +16,32 @@ import sys
 
 MCP23017_IODIRA = 0x00
 MCP23017_IODIRB = 0x01
-MCP23017_GPIOA  = 0x12
-MCP23017_GPIOB  = 0x13
-MCP23017_GPPUA  = 0x0C
-MCP23017_GPPUB  = 0x0D
-MCP23017_OLATA  = 0x14
-MCP23017_OLATB  = 0x15
-MCP23008_GPIOA  = 0x09
-MCP23008_GPPUA  = 0x06
-MCP23008_OLATA  = 0x0A
+MCP23017_GPIOA = 0x12
+MCP23017_GPIOB = 0x13
+MCP23017_GPPUA = 0x0C
+MCP23017_GPPUB = 0x0D
+MCP23017_OLATA = 0x14
+MCP23017_OLATB = 0x15
+MCP23008_GPIOA = 0x09
+MCP23008_GPPUA = 0x06
+MCP23008_OLATA = 0x0A
 FAKE = False
+
+
 class Internal_functions(object):
-    
+
     @staticmethod
     def sampleGen(duration):
         '''
         simple generator for variable speed tests
         divide the total time by 4, send first 30% of speed, then 60%, then 100%, then 50%
         '''
-        yield 0.3, duration/4
-        yield 0.6, duration/4
-        yield 1, duration/4
-        yield 0.5, duration/4
-    
+        yield 0.3, duration / 4
+        yield 0.6, duration / 4
+        yield 1, duration / 4
+        yield 0.5, duration / 4
+
+
 def switchcontrol(control, on=0, debug=False):
     '''
     Pianocktail fonction to open or close given pump
@@ -50,11 +53,12 @@ def switchcontrol(control, on=0, debug=False):
     '''
     init_gpio = []
     init_pwm = []
-    gpio_ctrl=[]
-    pwm_ctrl=[]
+    gpio_ctrl = []
+    pwm_ctrl = []
     if debug:
-        print(str(control)+' on='+str(on))
-        print('switchcontrol type %s requested for pump %s' % (control[0],control[2]))
+        print(str(control) + ' on=' + str(on))
+        print('switchcontrol type %s requested for pump %s' %
+              (control[0], control[2]))
     try:
         if control[0] == 'pwm':
             try:
@@ -65,15 +69,16 @@ def switchcontrol(control, on=0, debug=False):
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
             if on == 1:
-                pwm_ctrl[idx].setPWM(control[2], int(control[3]*1024.0), 0)
+                pwm_ctrl[idx].setPWM(control[2], int(control[3] * 1024.0), 0)
             else:
                 pwm_ctrl[idx].setPWM(control[2], 0, 0)
-                
+
         if control[0] == 'gpio':
             try:
                 idx = init_gpio.index(control[1])
             except ValueError:
-                gpio_ctrl.append(Rpi_MCP230XX(address=control[1], num_gpios=16))
+                gpio_ctrl.append(Rpi_MCP230XX(
+                    address=control[1], num_gpios=16))
                 init_gpio.append(control[1])
                 idx = len(init_gpio) - 1
             if on == 1:
@@ -84,11 +89,10 @@ def switchcontrol(control, on=0, debug=False):
                 gpio_ctrl[idx].output(control[2], 0)
     except Exception, err:
         print(err.message)
-        raise 
-        
-    
+        raise
 
-def playRecipe(ingredients_list, debug=False):
+
+def playRecipe(ingredients_list, qty=1, debug=False):
     '''
     Pianocktail fonction to serve given list of ingredients
     Each ingredient is a sub-list containing:
@@ -101,8 +105,8 @@ def playRecipe(ingredients_list, debug=False):
     '''
     init_gpio = []
     init_pwm = []
-    gpio_ctrl=[]
-    pwm_ctrl=[]
+    gpio_ctrl = []
+    pwm_ctrl = []
 #     ingredients_list=[]
 #     if prelist != None:
 #         ingredients_list = prelist
@@ -114,14 +118,15 @@ def playRecipe(ingredients_list, debug=False):
             try:
                 idx = init_gpio.index(ingredient[1])
             except ValueError:
-                gpio_ctrl.append(Rpi_MCP230XX(address=ingredient[1], num_gpios=16))
+                gpio_ctrl.append(Rpi_MCP230XX(
+                    address=ingredient[1], num_gpios=16))
                 init_gpio.append(ingredient[1])
                 idx = len(init_gpio) - 1
             gpio_ctrl[idx].config(ingredient[2], gpio_ctrl[idx].OUTPUT)
             gpio_ctrl[idx].output(ingredient[2], 1)
-            time.sleep(ingredient[3])
+            time.sleep(ingredient[3] * qty)
             gpio_ctrl[idx].output(ingredient[2], 0)
-            
+
         elif ingredient[0] == 'pwm':
             try:
                 idx = init_pwm.index(ingredient[1])
@@ -130,22 +135,25 @@ def playRecipe(ingredients_list, debug=False):
                 init_pwm.append(ingredient[1])
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
-            if ingredient[5] not in ('None',''):
+            if ingredient[5] not in ('None', ''):
                 try:
-                    fct = getattr(Internal_functions,ingredient[5])
+                    fct = getattr(Internal_functions, ingredient[5])
                     res = fct(ingredient[3])
                     for ratio, duration in res:
-                        pwm_ctrl[idx].setPWM(ingredient[2], int(ratio*ingredient[4]*1024.0), 0)
-                        time.sleep(duration)
+                        pwm_ctrl[idx].setPWM(ingredient[2], int(
+                            ratio * ingredient[4] * 1024.0), 0)
+                        time.sleep(duration * qty)
                 except Exception, e:
                     print(e.message)
-                    pwm_ctrl[idx].setPWM(ingredient[2], int(ingredient[4]*1024.0), 0)
-                    time.sleep(ingredient[3])
+                    pwm_ctrl[idx].setPWM(
+                        ingredient[2], int(ingredient[4] * 1024.0), 0)
+                    time.sleep(ingredient[3] * qty)
             else:
-                pwm_ctrl[idx].setPWM(ingredient[2], int(ingredient[4]*1024.0), 0)
-                time.sleep(ingredient[3])
+                pwm_ctrl[idx].setPWM(
+                    ingredient[2], int(ingredient[4] * 1024.0), 0)
+                time.sleep(ingredient[3] * qty)
             pwm_ctrl[idx].setPWM(ingredient[2], 0, 0)
-            
+
         elif ingredient[0] == 'stepper':
             '''
             stepper command
@@ -153,18 +161,19 @@ def playRecipe(ingredients_list, debug=False):
             try:
                 idx = init_gpio.index(ingredient[1])
             except ValueError:
-                gpio_ctrl.append(Rpi_MCP230XX(address=ingredient[1], num_gpios=16))
+                gpio_ctrl.append(Rpi_MCP230XX(
+                    address=ingredient[1], num_gpios=16))
                 init_gpio.append(ingredient[1])
                 idx = len(init_gpio) - 1
             addresses = ingredient[2]
             stepper = Stepper(addresses, gpio_ctrl[idx])
             if ingredient[3] < 0:
-                stepper.backward(-int(ingredient[3]*1000.0))
+                stepper.backward(-int(ingredient[3] * 1000.0))
             else:
-                stepper.forward(int(ingredient[3]*1000.0))
+                stepper.forward(int(ingredient[3] * 1000.0))
             for address in addresses:
                 gpio_ctrl[idx].output(address, 0)
-        
+
         elif ingredient[0] == 'motor':
             '''
             continuous motor
@@ -172,11 +181,12 @@ def playRecipe(ingredients_list, debug=False):
             try:
                 idx = init_gpio.index(ingredient[1][1])
             except ValueError:
-                gpio_ctrl.append(Rpi_MCP230XX(address=ingredient[1][1], num_gpios=16))
+                gpio_ctrl.append(Rpi_MCP230XX(
+                    address=ingredient[1][1], num_gpios=16))
                 init_gpio.append(ingredient[1][1])
                 idx = len(init_gpio) - 1
             addresses = ingredient[2]
-            motor = Motor(addresses[1:],gpio_ctrl[idx])
+            motor = Motor(addresses[1:], gpio_ctrl[idx])
             speed = abs(ingredient[4])
             try:
                 idx = init_pwm.index(ingredient[1][0])
@@ -185,13 +195,14 @@ def playRecipe(ingredients_list, debug=False):
                 init_pwm.append(ingredient[1][0])
                 idx = len(init_pwm) - 1
                 pwm_ctrl[idx].setPWMFreq(60)
-            if ingredient[5] not in ('None',''):
+            if ingredient[5] not in ('None', ''):
                 try:
-                    fct = getattr(Internal_functions,ingredient[5])
+                    fct = getattr(Internal_functions, ingredient[5])
                     res = fct(float(abs(ingredient[3])))
                     for ratio, duration in res:
                         print("duration = %f" % duration)
-                        pwm_ctrl[idx].setPWM(addresses[0], int(ratio*ingredient[4]*1024.0), 0)
+                        pwm_ctrl[idx].setPWM(addresses[0], int(
+                            ratio * ingredient[4] * 1024.0), 0)
                         if ingredient[3] < 0:
                             motor.backward()
                         else:
@@ -199,32 +210,37 @@ def playRecipe(ingredients_list, debug=False):
                         time.sleep(duration)
                 except Exception, e:
                     print(e.message)
-                    pwm_ctrl[idx].setPWM(addresses[0], int(ingredient[4]*1024.0), 0)
+                    pwm_ctrl[idx].setPWM(
+                        addresses[0], int(ingredient[4] * 1024.0), 0)
                     if float(ingredient[3]) < 0:
                         motor.backward()
                     else:
                         motor.forward()
                     time.sleep(float(abs(ingredient[3])))
             else:
-                pwm_ctrl[idx].setPWM(addresses[0], int(speed*1024.0), 0)
+                pwm_ctrl[idx].setPWM(addresses[0], int(speed * 1024.0), 0)
                 if ingredient[3] < 0:
                     motor.backward()
                 else:
                     motor.forward()
                 time.sleep(float(abs(ingredient[3])))
-            motor.stop()        
+            motor.stop()
+
 
 class Rpi_Exception(Exception):
     '''
     Custom exception
     '''
+
     def __init__(self, value):
         self.parameter = value
+
     def __str__(self):
         return repr(self.parameter)
 
-class Rpi_I2C(object) :
-    
+
+class Rpi_I2C(object):
+
     @staticmethod
     def getPiRevision():
         '''Gets the version number of the Raspberry Pi board
@@ -235,16 +251,16 @@ class Rpi_I2C(object) :
             with open('/proc/cpuinfo', 'r') as f:
                 for line in f:
                     if line.startswith('Revision'):
-                        return 1 if line.rstrip()[-1] in ['1', '2'] else 2
+                        return int(line.rstrip()[-1])
         except:
             return 0
-        
+
     @staticmethod
     def getPiI2CBusNumber():
-    # Gets the I2C bus number /dev/i2c#
+        # Gets the I2C bus number /dev/i2c#
         return 1 if Rpi_I2C.getPiRevision() > 1 else 0
- 
-    def __init__(self, address, busnum= -1, debug=False):
+
+    def __init__(self, address, busnum=-1, debug=False):
         self.address = address
     # By default, the correct I2C bus is auto-detected using /proc/cpuinfo
     # Alternatively, you can hard-code the bus version below:
@@ -282,7 +298,7 @@ class Rpi_I2C(object) :
         try:
             self.bus.write_word_data(self.address, reg, value)
             if self.debug:
-                print ("I2C: Wrote 0x%02X to register pair 0x%02X,0x%02X" % 
+                print ("I2C: Wrote 0x%02X to register pair 0x%02X,0x%02X" %
                        (value, reg, reg + 1))
         except IOError:
             return self.errMsg()
@@ -302,7 +318,7 @@ class Rpi_I2C(object) :
         try:
             results = self.bus.read_i2c_block_data(self.address, reg, length)
             if self.debug:
-                print ("I2C: Device 0x%02X returned the following from reg 0x%02X" % 
+                print ("I2C: Device 0x%02X returned the following from reg 0x%02X" %
                        (self.address, reg))
                 print results
             return results
@@ -314,7 +330,7 @@ class Rpi_I2C(object) :
         try:
             result = self.bus.read_byte_data(self.address, reg)
             if self.debug:
-                print ("I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % 
+                print ("I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" %
                        (self.address, result & 0xFF, reg))
             return result
         except IOError:
@@ -324,9 +340,10 @@ class Rpi_I2C(object) :
         "Reads a signed byte from the I2C device"
         try:
             result = self.bus.read_byte_data(self.address, reg)
-            if result > 127: result -= 256
+            if result > 127:
+                result -= 256
             if self.debug:
-                print ("I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" % 
+                print ("I2C: Device 0x%02X returned 0x%02X from reg 0x%02X" %
                        (self.address, result & 0xFF, reg))
             return result
         except IOError:
@@ -337,8 +354,8 @@ class Rpi_I2C(object) :
         try:
             result = self.bus.read_word_data(self.address, reg)
             if (self.debug):
-                print("I2C: Device 0x%02X returned 0x%04X from reg 0x%02X" % 
-                (self.address, result & 0xFFFF, reg))
+                print("I2C: Device 0x%02X returned 0x%04X from reg 0x%02X" %
+                      (self.address, result & 0xFFFF, reg))
             return result
         except IOError:
             return self.errMsg()
@@ -348,12 +365,13 @@ class Rpi_I2C(object) :
         try:
             result = self.bus.read_word_data(self.address, reg)
             if (self.debug):
-                print("I2C: Device 0x%02X returned 0x%04X from reg 0x%02X" % 
-                (self.address, result & 0xFFFF, reg))
+                print("I2C: Device 0x%02X returned 0x%04X from reg 0x%02X" %
+                      (self.address, result & 0xFFFF, reg))
             return result
         except IOError:
             return self.errMsg()
-        
+
+
 class Rpi_MCP230XX(object):
     OUTPUT = 0
     INPUT = 1
@@ -370,12 +388,15 @@ class Rpi_MCP230XX(object):
                 self.num_gpios = num_gpios
                 # set defaults
                 if num_gpios <= 8:
-                    self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
+                    # all inputs on port A
+                    self.i2c.write8(MCP23017_IODIRA, 0xFF)
                     self.direction = self.i2c.readU8(MCP23017_IODIRA)
                     self.i2c.write8(MCP23008_GPPUA, 0x00)
                 elif num_gpios > 8 and num_gpios <= 16:
-                    self.i2c.write8(MCP23017_IODIRA, 0xFF)  # all inputs on port A
-                    self.i2c.write8(MCP23017_IODIRB, 0xFF)  # all inputs on port B
+                    # all inputs on port A
+                    self.i2c.write8(MCP23017_IODIRA, 0xFF)
+                    # all inputs on port B
+                    self.i2c.write8(MCP23017_IODIRB, 0xFF)
                     self.direction = self.i2c.readU8(MCP23017_IODIRA)
                     self.direction |= self.i2c.readU8(MCP23017_IODIRB) << 8
                     self.i2c.write8(MCP23017_GPPUA, 0x00)
@@ -389,15 +410,15 @@ class Rpi_MCP230XX(object):
         elif value == 1:
             return bitmap | (1 << bit)
 
-    def _readandchangepin(self, port, pin, value, currvalue = None):
-        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
+    def _readandchangepin(self, port, pin, value, currvalue=None):
+        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (
+            pin, self.num_gpios)
         #assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
         if not currvalue:
             currvalue = self.i2c.readU8(port)
         newvalue = self._changebit(currvalue, pin, value)
         self.i2c.write8(port, newvalue)
         return newvalue
-
 
     def pullup(self, pin, value):
         if self.num_gpios <= 8:
@@ -407,44 +428,53 @@ class Rpi_MCP230XX(object):
             if (pin < 8):
                 return
             else:
-                return self._readandchangepin(MCP23017_GPPUB, pin-8, value) << 8
+                return self._readandchangepin(MCP23017_GPPUB, pin - 8, value) << 8
 
     # Set pin to either input or output mode
     def config(self, pin, mode):
         if FAKE == True:
-            print("GPIO Controller 0X%02X config mode pin n° %d to %d" % (self.address, pin, mode))
+            print("GPIO Controller 0X%02X config mode pin n° %d to %d" %
+                  (self.address, pin, mode))
         else:
             if self.num_gpios <= 8:
-                self.direction = self._readandchangepin(MCP23017_IODIRA, pin, mode)
+                self.direction = self._readandchangepin(
+                    MCP23017_IODIRA, pin, mode)
             if self.num_gpios <= 16:
                 if (pin < 8):
-                    self.direction = self._readandchangepin(MCP23017_IODIRA, pin, mode)
+                    self.direction = self._readandchangepin(
+                        MCP23017_IODIRA, pin, mode)
                 else:
-                    self.direction |= self._readandchangepin(MCP23017_IODIRB, pin-8, mode) << 8
+                    self.direction |= self._readandchangepin(
+                        MCP23017_IODIRB, pin - 8, mode) << 8
             return self.direction
-            
-            
+
     def output(self, pin, value):
         if FAKE == True:
-            print("GPIO Controller 0X%02X sent data %d to pin n° %d" % (self.address, value, pin))
+            print("GPIO Controller 0X%02X sent data %d to pin n° %d" %
+                  (self.address, value, pin))
         else:
             # assert self.direction & (1 << pin) == 0, "Pin %s not set to output" % pin
             if self.num_gpios <= 8:
-                self.outputvalue = self._readandchangepin(MCP23008_GPIOA, pin, value, self.i2c.readU8(MCP23008_OLATA))
+                self.outputvalue = self._readandchangepin(
+                    MCP23008_GPIOA, pin, value, self.i2c.readU8(MCP23008_OLATA))
             if self.num_gpios <= 16:
                 if (pin < 8):
-                    self.outputvalue = self._readandchangepin(MCP23017_GPIOA, pin, value, self.i2c.readU8(MCP23017_OLATA))
+                    self.outputvalue = self._readandchangepin(
+                        MCP23017_GPIOA, pin, value, self.i2c.readU8(MCP23017_OLATA))
                 else:
-                    self.outputvalue = self._readandchangepin(MCP23017_GPIOB, pin-8, value, self.i2c.readU8(MCP23017_OLATB)) << 8
+                    self.outputvalue = self._readandchangepin(
+                        MCP23017_GPIOB, pin - 8, value, self.i2c.readU8(MCP23017_OLATB)) << 8
             return self.outputvalue
-#     
-#     
+#
+#
 #             self.outputvalue = self._readandchangepin(MCP23017_IODIRA, pin, value, self.outputvalue)
 #             return self.outputvalue
 
     def input(self, pin):
-        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (pin, self.num_gpios)
-        assert self.direction & (1 << pin) != 0, "Pin %s not set to input" % pin
+        assert pin >= 0 and pin < self.num_gpios, "Pin number %s is invalid, only 0-%s are valid" % (
+            pin, self.num_gpios)
+        assert self.direction & (
+            1 << pin) != 0, "Pin %s not set to input" % pin
         if self.num_gpios <= 8:
             value = self.i2c.readU8(MCP23008_GPIOA)
         elif self.num_gpios > 8 and self.num_gpios <= 16:
@@ -458,7 +488,8 @@ class Rpi_MCP230XX(object):
 
     def readS8(self):
         result = self.i2c.readU8(MCP23008_OLATA)
-        if (result > 127): result -= 256
+        if (result > 127):
+            result -= 256
         return result
 
     def readU16(self):
@@ -471,7 +502,8 @@ class Rpi_MCP230XX(object):
         assert self.num_gpios >= 16, "16bits required"
         lo = self.i2c.readU8(MCP23017_OLATA)
         hi = self.i2c.readU8(MCP23017_OLATB)
-        if (hi > 127): hi -= 256
+        if (hi > 127):
+            hi -= 256
         return((hi << 8) | lo)
 
     def write8(self, value):
@@ -484,28 +516,36 @@ class Rpi_MCP230XX(object):
 
 # RPi.GPIO compatible interface for MCP23017 and MCP23008
 
+
 class Rpi_GPIO(object):
     OUT = 0
     IN = 1
     BCM = 0
     BOARD = 0
+
     def __init__(self, busnum, address, num_gpios):
         self.chip = Rpi_MCP230XX(busnum, address, num_gpios)
+
     def setmode(self, mode):
         # do nothing
         pass
+
     def setup(self, pin, mode):
         self.chip.config(pin, mode)
+
     def input(self, pin):
         return self.chip.input(pin)
+
     def output(self, pin, value):
         self.chip.output(pin, value)
+
     def pullup(self, pin, value):
         self.chip.pullup(pin, value)
 
+
 class Rpi_PWM(object):
     i2c = None
-    
+
     # Registers/etc.
     __SUBADR1 = 0x02
     __SUBADR2 = 0x03
@@ -520,7 +560,7 @@ class Rpi_PWM(object):
     __ALLLED_ON_H = 0xFB
     __ALLLED_OFF_L = 0xFC
     __ALLLED_OFF_H = 0xFD
-    
+
     def __init__(self, address=0x40, debug=False):
         self.debug = debug
         if FAKE == False:
@@ -528,12 +568,14 @@ class Rpi_PWM(object):
             if (self.debug):
                 print "Reseting PCA9685"
             if self.i2c.write8(self.__MODE1, 0x00) != None:
-                raise Rpi_Exception("Unable to write init sequence for PCA9685 at address 0x%02XX" % address)
+                raise Rpi_Exception(
+                    "Unable to write init sequence for PCA9685 at address 0x%02XX" % address)
         self.address = address
-    
+
     def setPWMFreq(self, freq):
         if FAKE:
-            print("Set PWM controller 0X%02X to frequency %d" % (self.address, freq))
+            print("Set PWM controller 0X%02X to frequency %d" %
+                  (self.address, freq))
         else:
             "Set the PWM frequency"
             prescaleval = 25000000.0  # 25MHz
@@ -543,20 +585,21 @@ class Rpi_PWM(object):
             if (self.debug):
                 print "Setting PWM frequency to %d Hz" % freq
                 print "Estimated pre-scale: %d" % prescaleval
-            prescale = math.floor(prescaleval + 0.5)
+            prescale = int(math.floor(prescaleval + 0.5))
             if (self.debug):
                 print "Final pre-scale: %d" % prescale
-            oldmode = self.i2c.readU8(self.__MODE1);
+            oldmode = self.i2c.readU8(self.__MODE1)
             newmode = (oldmode & 0x7F) | 0x10  # sleep
             self.i2c.write8(self.__MODE1, newmode)  # go to sleep
-            self.i2c.write8(self.__PRESCALE, int(math.floor(prescale)))
+            self.i2c.write8(self.__PRESCALE, prescale)
             self.i2c.write8(self.__MODE1, oldmode)
             time.sleep(0.005)
             self.i2c.write8(self.__MODE1, oldmode | 0x80)
-    
+
     def setPWM(self, channel, on, off):
         if FAKE:
-            print("Set PWM controller 0X%02X channel n°%d to value %d" % (self.address, channel, on))
+            print("Set PWM controller 0X%02X channel n°%d to value %d" %
+                  (self.address, channel, on))
         else:
             "Sets a single PWM channel"
             self.i2c.write8(self.__LED0_ON_L + 4 * channel, on & 0xFF)
@@ -564,24 +607,25 @@ class Rpi_PWM(object):
             self.i2c.write8(self.__LED0_OFF_L + 4 * channel, off & 0xFF)
             self.i2c.write8(self.__LED0_OFF_H + 4 * channel, off >> 8)
 
+
 class Stepper(object):
-    
+
     motorA = 2
     motorB = 1
     power = False
-  
+
     def __init__(self, addresses, bus):
         self.addresses = addresses
         self.bus = bus
         for addr in addresses:
             bus.config(addr, bus.OUTPUT)
             bus.output(addr, 0)
-      
+
     def __del__(self):
         for addr in self.addresses:
             self.bus.output(addr, 0)
         self.power = False
-      
+
     def _move(self, speed):
         if self.power == False:
             self.bus.output(self.addresses[0], 1)
@@ -599,11 +643,12 @@ class Stepper(object):
         else:
             self.bus.output(self.addresses[4], 0)
             self.bus.output(self.addresses[5], 1)
-        time.sleep(speed)   
-      
+        time.sleep(speed)
+
     def backward(self, steps, speed=0.0):
         if FAKE:
-            print("Stepper backward for %d steps at %f speed, only one will be simulated for logs sanity..." % (steps, speed))
+            print("Stepper backward for %d steps at %f speed, only one will be simulated for logs sanity..." % (
+                steps, speed))
             pol = self.motorA + self.motorB
             if pol == 4:
                 self.motorA = 1
@@ -612,7 +657,7 @@ class Stepper(object):
             elif pol == 3:
                 if self.motorA == 1:
                     self.motorB = 1
-                else :
+                else:
                     self.motorB = 2
             self._move(speed)
         else:
@@ -625,16 +670,17 @@ class Stepper(object):
                 elif pol == 3:
                     if self.motorA == 1:
                         self.motorB = 1
-                    else :
+                    else:
                         self.motorB = 2
                 self._move(speed)
     # for addr in self.addresses:
       # self.bus.output(addr, 0)
     # self.power = False
-    
+
     def forward(self, steps, speed=0.0):
         if FAKE:
-            print("Stepper forward for %d steps at %f speed, only one will be simulated for logs sanity..." % (steps, speed))
+            print("Stepper forward for %d steps at %f speed, only one will be simulated for logs sanity..." % (
+                steps, speed))
             pol = self.motorA + self.motorB
             if pol == 4:
                 self.motorB = 1
@@ -643,7 +689,7 @@ class Stepper(object):
             elif pol == 3:
                 if self.motorA == 1:
                     self.motorA = 2
-                else :
+                else:
                     self.motorA = 1
             self._move(speed)
         else:
@@ -656,57 +702,59 @@ class Stepper(object):
                 elif pol == 3:
                     if self.motorA == 1:
                         self.motorA = 2
-                    else :
+                    else:
                         self.motorA = 1
                 self._move(speed)
 
+
 class Motor(object):
-    
+
     power = False
-  
+
     def __init__(self, addresses, bus):
         self.addresses = addresses
         self.a = addresses[0]
         self.b = addresses[1]
         self.bus = bus
-      
+
     def __del__(self):
         for addr in self.addresses:
             self.bus.output(addr, 0)
         self.power = False
-        
+
     def _move(self, sens):
         if self.power == False:
             for addr in self.addresses:
                 self.bus.config(addr, self.bus.OUTPUT)
-            
+
         if sens >= 0:
             self.bus.output(self.a, sens)
             self.bus.output(self.b, 0)
         else:
             self.bus.output(self.a, 0)
             self.bus.output(self.b, 1)
-            
-            
+
     def backward(self):
         if FAKE:
             print("Motor backward")
         self._move(-1)
-    
+
     def forward(self):
         if FAKE:
             print("Motor forward")
         self._move(1)
-        
+
     def stop(self):
         if FAKE:
             print("Motor stop")
         self._move(0)
 
+
 if __name__ == '__main__':
     print("Fake test first:")
     print("Send Recipe to fake GPIO and PWM controllers")
-    recipe = [['fake_gpio',0x20,0,2.1,0,''],['fake_pwm',0x40,1,2.3,1.0,sampleGen]]
+    recipe = [['fake_gpio', 0x20, 0, 2.1, 0, ''], [
+        'fake_pwm', 0x40, 1, 2.3, 1.0, sampleGen]]
     playRecipe(recipe, debug=True)
     print('Fake test finished')
     print('hardware tests:')
@@ -717,7 +765,7 @@ if __name__ == '__main__':
         print(err.message)
         sys.exit(0)
     try:
-        mcp = Rpi_MCP230XX(address = 0x20, num_gpios = 16)
+        mcp = Rpi_MCP230XX(address=0x20, num_gpios=16)
         print('gpio controller found at 0x%02X' % 0x20)
         hasgpio = True
     except:
@@ -731,13 +779,13 @@ if __name__ == '__main__':
         haspwm = False
         print('no valid PWM controller found')
         print(err.message)
-        
+
     if hasgpio:
-        
+
         # Set pins 0, 1 and 2 to output (you can set pins 0..15 this way)
         mcp.config(0, mcp.OUTPUT)
         mcp.config(1, mcp.OUTPUT)
-        
+
         print "Starting blinking  on i2c GPIO pin 0 & 1 (CTRL+C to quit)"
         while (True):
             try:
@@ -747,7 +795,7 @@ if __name__ == '__main__':
                 time.sleep(0.5)
                 mcp.output(0, 0)  # Pin 0 Low
                 time.sleep(0.5)
-                mcp.output(1, 0) # Pin 1 Low
+                mcp.output(1, 0)  # Pin 1 Low
             except KeyboardInterrupt:
                 mcp.output(0, 0)
                 mcp.output(1, 0)
@@ -770,5 +818,3 @@ if __name__ == '__main__':
             except KeyboardInterrupt:
                 pwm.setPWM(0, 0, 0)
                 break
-        
-        
