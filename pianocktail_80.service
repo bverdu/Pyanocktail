@@ -2,7 +2,7 @@
 Description=Pianocktail service
 
 [Service]
-ExecStart=/usr/bin/twistd --nodaemon\
+ExecStart=/usr/bin/twistd3 --nodaemon\
 			 			  --pidfile= \
 			 			  pianocktail --port systemd:domain=INET:index=0
 User=piano
