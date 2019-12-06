@@ -22,47 +22,47 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
 #     print("*****"+output)
     for line in output.split("\n"):
         if debug:
-            print("****" + line.decode("utf8"))
+            print("****" + line)
         if line.startswith(' Duree'):
             duree = line.split()[0].split('=')[1]
             tristesse = line.split()[1].split('=')[1]
             enervement = line.split()[2].split('=')[1]
             res.append(("Durée du morceau = " + duree +
-                        " secondes").decode('utf-8'))
-            res.append(('Tristesse = ' + tristesse).decode('utf-8'))
-            res.append(('Énervement = ' + enervement).decode('utf-8'))
+                        " secondes"))
+            res.append(('Tristesse = ' + tristesse))
+            res.append(('Énervement = ' + enervement))
             if debug:
-                print(u"Durée du morceau = " + duree.decode('utf8'))
+                print(u"Durée du morceau = " + duree)
             if debug:
-                print("tristesse returned = " + tristesse.decode('utf8'))
+                print("tristesse returned = " + tristesse)
         elif line.startswith(' Complexite'):
             complexite = line.split()[0].split('=')[1]
             metrique = line.split()[1].split('=')[1]
             tonalite = line.split()[2].split('=')[1]
-            res.append(('Complexité = ' + complexite).decode('utf-8'))
+            res.append(('Complexité = ' + complexite))
             if int(metrique.strip('.')) == 2:
-                res.append(("Métrique = Binaire").decode('utf-8'))
+                res.append(("Métrique = Binaire"))
                 if debug:
                     print(u"Métrique = Binaire")
             elif int(metrique.strip('.')) == 3:
-                res.append(("Métrique = Ternaire").decode('utf-8'))
+                res.append(("Métrique = Ternaire"))
                 if debug:
                     print(u"Métrique = Ternaire")
             else:
-                res.append(("Métrique incoherente....").decode('utf-8'))
+                res.append(("Métrique incoherente...."))
                 if debug:
                     print(u"Métrique incoherente....")
             res.append(
-                ("Tonalité = " + tonalite_tab[int(tonalite.strip('.')) - 1]).decode('utf-8'))
+                ("Tonalité = " + tonalite_tab[int(tonalite.strip('.')) - 1]))
             if debug:
                 print(
-                    (u"Tonalité = " + tonalite_tab[int(tonalite[0].strip('.')) - 1].decode('utf-8')))
+                    (u"Tonalité = " + tonalite_tab[int(tonalite[0].strip('.')) - 1]))
         elif line.startswith(' Tempo'):
             tempo = line.split()[0].split('=')[1]
 #             cock = line.split()[1].split('=')[1:]
             res.append("Tempo = " + tempo + " bpm")
             if debug:
-                print(u"Tempo = " + tempo.decode("utf8") + " bpm")
+                print(u"Tempo = " + tempo + " bpm")
 
     pass1 = []
     size = int(len(cocktail) / 4)
@@ -97,7 +97,7 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
                 cocktail = recipe['name']
         else:
             c = [int(recipe['id']), score]
-            cocktail = recipe['name'].decode('utf-8')
+            cocktail = recipe['name']
 
 #     for recipe in cocktails:
 #         if recipe['available'] != 'OK':
@@ -114,12 +114,12 @@ def filter_process_result(output, cocktails, compind=1, tristind=1, nervind=1, d
 #                 cocktail = recipe['name']
 #         else:
 #             c = [int(recipe['id']),score]
-#             cocktail = recipe['name'].decode('utf-8')
+#             cocktail = recipe['name']
     if len(c) > 0:
-        res.append(("Cocktail choisi : " + cocktail).decode('utf-8'))
+        res.append(("Cocktail choisi : " + cocktail))
         if debug:
             print(("cocktail found = " + cocktail +
-                   " score = " + str(c[1])).decode('utf-8'))
+                   " score = " + str(c[1])))
         result['cocktail'] = c[0]
     else:
         res.append((u"Aucun cocktail trouvé"))

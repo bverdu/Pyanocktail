@@ -21,10 +21,10 @@ from twisted.python import log, util
 from autobahn.twisted.websocket import WebSocketServerFactory, \
     WebSocketServerProtocol
 from autobahn.twisted.resource import WebSocketResource
-import pyanocktail.dbUtils as dbUtils
-from pyanocktail.i2cRpi import switchcontrol, playRecipe
-from pyanocktail.songAnalysis import filter_process_result, format_output
-from pyanalysis import PIANOCKTAIL
+from . import dbUtils
+from .i2cRpi import switchcontrol, playRecipe
+from .songAnalysis import filter_process_result, format_output
+from .pyanalysis import PIANOCKTAIL
 # from pyanocktail.midi import listInports, listOutports
 
 # from pyanocktail.pyanocktaild import task_queue, status_queue
@@ -83,7 +83,7 @@ class WebService(StreamServerEndpointService):
 #         self.wsfactory.setProtocolOptions(allowHixie76=True)
         self.wsfactory.parent = self
         self.wsresource = WebSocketResource(self.wsfactory)
-        self.page.putChild("ws", self.wsresource)
+        self.page.putChild(b"ws", self.wsresource)
 #         self.realport = self.endpoint._port
 
     def startService(self):
@@ -121,7 +121,7 @@ class WebService(StreamServerEndpointService):
         gpioscriptpath = util.sibpath(__file__, "gpioprocess.py")
         gpioex = [exe, "-u"]
         gpioex.append(gpioscriptpath)
-        gpioargs = ['-i'] + self.in_functions.keys()
+        gpioargs = ['-i'] + list(self.in_functions.keys())
         gpiocmd = gpioex + gpioargs
         if self.debug:
             log.msg(gpiocmd)
@@ -145,49 +145,50 @@ class WebService(StreamServerEndpointService):
         if result != None:
             self.analyzed = result
             for line in result['result']:
-                self.wsfactory.sendmessage(line)
+                self.wsfactory.sendmessage(line.encode("utf8"))
         return int(result['cocktail'])
 
     def set_command(self, command, args=''):
         '''
         transmit or execute commands from websocket or gpio interfaces
         '''
-        if command == 'stop':
+        if command == b'stop':
             if self.playing:
-                self.midifactory.command('play 0')
+                self.midifactory.command(b'play 0')
                 self.playing = False
             if self.recording:
-                self.midifactory.command('record 0')
+                self.midifactory.command(b'record 0')
                 self.recording = False
             if self.opened:
                 pass
-        elif command in ('play', 'record'):
-            self.midifactory.command(command + ' 1')
-            if command == 'play':
+        elif command in (b'play', b'record'):
+            self.midifactory.command(command + b' 1')
+            if command == b'play':
                 self.playing = True
             else:
                 self.analyzed['cocktail'] = 0
-                self.analyzed['result'] = ''
+                self.analyzed['result'] = b''
                 if self.recording == False:
                     self.recording = True
                     self.notes = []
-        elif command == 'cocktail':
+        elif command == b'cocktail':
             if self.analyzed['cocktail'] > 0:
                 d = threads.deferToThread(
                     self.serve, *(self.analyzed['cocktail'], self.conf.factor))
                 d.addCallback(self.wsfactory.sendmessage)
-                self.wsfactory.sendmessage(u'Service en cours...\n')
+                self.wsfactory.sendmessage(b'Service en cours...\n')
             else:
                 if self.recording:
-                    self.midifactory.command('record 0')
+                    self.midifactory.command(b'record 0')
                     self.recording = False
                     if self.analyzed['cocktail'] == 0:
                         # @UndefinedVariable
                         # @UndefinedVariable
                         # @UndefinedVariable
                         # @UndefinedVariable
-                        reactor.callLater(1, self.set_command, 'cocktail')
-        elif command[:4] == 'test':
+                        reactor.callLater(  # @UndefinedVariable
+                            1, self.set_command, 'cocktail')
+        elif command[:4] == b'test':
             cont = dbUtils.getPump(self.dbsession, command[6:])
             if len(cont) > 1:
                 if cont[0] == 'gpio_in':
@@ -197,7 +198,7 @@ class WebService(StreamServerEndpointService):
                                 ",")[0], cont[4].split(",")[1])
                         except:
                             self.set_command(cont[4].split(",")[0])
-                    except Exception, err:
+                    except Exception as err:
                         print(err.message)
                 elif command[5] == '-':
                     switchcontrol(cont, debug=self.debug)
@@ -207,10 +208,10 @@ class WebService(StreamServerEndpointService):
                     self.serving = True
             else:
                 log.msg("i2c error: no data found for pump n°:%s"
-                        % command[6:])
+                        % str(command[6:]))
         else:
             try:
-                fct = getattr(self, "sys_" + command)
+                fct = getattr(self, b"sys_" + command)
             except:
                 log.msg("unknow function: %s" % command)
             else:
@@ -222,8 +223,8 @@ class WebService(StreamServerEndpointService):
         '''
         if self.debug:
             log.msg('command from midi process: %s' % command)
-        if command == 'Recorded':
-            self.wsfactory.sendmessage("Analysing...")
+        if command == b'Recorded':
+            self.wsfactory.sendmessage(b"Analysing...")
 #             log.msg(self.notes)
             d = threads.deferToThread(self.getDataAnalysis)
             d.addCallback(self.analyze)
@@ -246,6 +247,7 @@ class WebService(StreamServerEndpointService):
         '''
         process information data from midi process
         '''
+        data = data.decode("utf8")
         if self.debug:
             log.msg('info from midi process: %s' % data)
 #         cid = d.split(':')[0]
@@ -280,13 +282,13 @@ class WebService(StreamServerEndpointService):
 
     def set_data(self, data, args=''):
         if self.debug:
-            log.msg(data + ' sent to midiprocess')
+            log.msg(data + b' sent to midiprocess')
         self.midifactory.send(data)
 
     def serve(self, cocktail_id, qty=1):
         service = dbUtils.getServe(self.dbsession, cocktail_id)
         playRecipe(service, qty, self.debug)
-        return "Cocktail Servi!"
+        return b"Cocktail Servi!"
 
     def analyze_old(self, tabs):
         #log.msg("analyse requested")
@@ -328,9 +330,9 @@ class WebService(StreamServerEndpointService):
         if self.debug:
             log.msg("Shutdown return value: %d" % value)
         if value == 0:
-            self.wsfactory.sendmessage(u'Shutdown in progress...\n')
+            self.wsfactory.sendmessage(b'Shutdown in progress...\n')
         else:
-            self.wsfactory.sendmessage(u'Shutdown error :(\n')
+            self.wsfactory.sendmessage(b'Shutdown error :(\n')
 
 
 class SeqFactory(WebSocketServerFactory):
@@ -343,7 +345,7 @@ class SeqFactory(WebSocketServerFactory):
         #         self.notein = notein_queue
         self.debug = debug
         self.clients = []
-        self.lastmsg = ""
+        self.lastmsg = b""
         WebSocketServerFactory.__init__(self, "ws://localhost:" + str(port))
 
     def got_midipid(self, midipid):
@@ -351,29 +353,27 @@ class SeqFactory(WebSocketServerFactory):
 
     def sendmessage(self, message):
         self.lastmsg = message
-        try:
-            for client in self.clients:
-                client.send(message, self.debug)
-        except Exception, err:
-            if self.debug:
-                log.msg("sendmessage error: " + err.message)
+#         try:
+        for client in self.clients:
+            client.send(message, self.debug)
+#         except Exception as err:
+#             if self.debug:
+#                 log.msg("sendmessage error: " + str(err))
 
     def wsReceived(self, data):
         #log.msg('data=%s' %data)
         if data.isdigit():
             #             print('note')
-            return defer.Deferred(self.parent.set_data('1 ' + data))
+            return defer.Deferred(self.parent.set_data(b'1 ' + data))
 #             if self.debug:
 #                 log.msg('digit: '+data)
-        elif data.startswith("-"):
-            return defer.Deferred(self.parent.set_data('0 ' + data[1:]))
+        elif data.startswith(b"-"):
+            return defer.Deferred(self.parent.set_data(b'0 ' + data[1:]))
         else:
             if self.debug:
-                log.msg('string: ' + data)
-            try:
-                return defer.Deferred(self.parent.set_command(data))
-            except:
-                return defer.Deferred(self.parent.set_command(data))
+                log.msg('string: ' + str(data))
+
+            return defer.Deferred(self.parent.set_command(data))
 
 
 class PyanoTCP(WebSocketServerProtocol):
@@ -391,16 +391,16 @@ class PyanoTCP(WebSocketServerProtocol):
 
     def onMessage(self, data, binary):
         if self.factory.debug:
-            log.msg('data from ws: ' + data)
-        if data == 'status':
+            log.msg('data from ws: ' + str(data))
+        if data == b'status':
             self.send(self.factory.lastmsg)
             return
         d = self.factory.wsReceived(data)
 
         def onError(err):
             if self.factory.debug:
-                log.msg('error msg : ' + data)
-            return 'Internal error in server'
+                log.msg('error msg : ' + str(data))
+            return b'Internal error in server'
         d.addErrback(onError)
 
         def writeResponse(message):
@@ -416,7 +416,7 @@ class PyanoTCP(WebSocketServerProtocol):
 
     def send(self, data, debug=False):
         if self.connected:
-            self.sendMessage(data.encode('utf-8'))
+            self.sendMessage(data)
 #            if debug:
 #                log.msg ("Sent to Websocket: "+data)
         elif debug:
@@ -440,20 +440,22 @@ class MidiProtocol(protocol.ProcessProtocol):
         log.msg("midi process started")
 #         self.transport.write("resume\n")
         self.factory.proto = self
-        self.write('list io')
+        self.write(b'list io')
 
     def childDataReceived(self, childFD, data):
         if childFD == 1:
-            for l in data.split('\n'):
+            for l in data.split(b'\n'):
+                print(l.lstrip()[2:])
                 try:
                     c = int(l.split()[0])
+                    print(c)
                     self.factory.receive(c, l.lstrip()[2:])
-                except:
-                    if l != '':
+                except IndexError:
+                    if l != b'':
                         log.msg("unknown message from midi process: %s" % l)
         elif childFD == 2:
-            for l in data.split('\n'):
-                if l != '':
+            for l in data.split(b'\n'):
+                if l != b'':
                     if self.debug:
                         log.msg(l)
                     try:
@@ -468,7 +470,7 @@ class MidiProtocol(protocol.ProcessProtocol):
     def write(self, data):
         if self.debug:
             log.msg('sending %s' % data)
-        self.transport.write(data + '\n')
+        self.transport.write(data + b'\n')
 
     def shutdown(self):
         if self.debug:
@@ -490,8 +492,8 @@ class MidiFactory(protocol.Factory):
     def send(self, data):
         self.proto.write(data)
 
-    def command(self, command, args=''):
-        self.proto.write((command + " " + args).encode('utf-8'))
+    def command(self, command, args=b''):
+        self.proto.write(command + b" " + args)
 
     def receive(self, c, data):
         if c in (0, 1, 3):
@@ -532,17 +534,17 @@ class GpioProtocol(protocol.ProcessProtocol):
 
     def childDataReceived(self, childFD, data):
         if childFD == 1:
-            for l in data.split('\n'):
+            for l in data.split(b'\n'):
                 try:
                     c = int(l.split()[0])
                     self.factory.receive(c)
                 except:
-                    if l != '':
-                        if l != 'None':
+                    if l != b'':
+                        if l != b'None':
                             log.msg("unknown message from gpio process: %s" % l)
         elif childFD == 2:
-            for l in data.split('\n'):
-                if l != '':
+            for l in data.split(b'\n'):
+                if l != b'':
                     log.msg("Error message from gpio process: %s" % l)
 
     def shutdown(self):
@@ -588,40 +590,40 @@ class Dispatcher(Resource):
 #         self.task = task_queue
 #         self.status_queue= status_queue
         self.debug = debug
-        self.putChild("pictures",
+        self.putChild(b"pictures",
                       static.File(os.path.join(self.installdir,
                                                'html', 'pictures')))
-        self.putChild("favicon.png",
+        self.putChild(b"favicon.png",
                       static.File(os.path.join(self.installdir,
                                                'html', 'favicon.png')))
-        self.putChild("style.css",
+        self.putChild(b"style.css",
                       static.File(os.path.join(self.installdir,
                                                'html', 'style.css')))
-        self.putChild("pianocktail.js",
+        self.putChild(b"pianocktail.js",
                       static.File(os.path.join(self.installdir,
                                                'html', 'pianocktail.js')))
-        self.putChild("main",
+        self.putChild(b"main",
                       static.File(os.path.join(self.installdir,
                                                'html', 'Pianocktail.html')))
-        self.putChild("config",
+        self.putChild(b"config",
                       static.File(os.path.join(self.installdir,
                                                'html', 'config.html')))
-        self.putChild("pumps",
+        self.putChild(b"pumps",
                       static.File(os.path.join(self.installdir,
                                                'html', 'pumps.html')))
-        self.putChild("analyze",
+        self.putChild(b"analyze",
                       static.File(os.path.join(self.installdir,
                                                'html', 'analyze.html')))
-        self.putChild("recipes",
+        self.putChild(b"recipes",
                       static.File(os.path.join(self.installdir,
                                                'html', 'recipes.html')))
-        self.putChild("fonts",
+        self.putChild(b"fonts",
                       static.File(os.path.join(self.installdir,
                                                'html', 'fonts')))
-        self.putChild("scripts",
+        self.putChild(b"scripts",
                       static.File(os.path.join(self.installdir,
                                                'html', 'scripts')))
-        self.putChild("notes.pckt",
+        self.putChild(b"notes.pckt",
                       static.File(os.path.join(self.installdir,
                                                'scripts', 'current.pckt'),
                                   defaultType='application/octet-stream'))
@@ -686,15 +688,16 @@ class MainPage(Resource):
         request.finish()
 
     def endRequest(self, res, req, com, result):
-        getattr(req, com)(result)
+        print(result)
+        getattr(req, com)(result.encode("utf8"))
         req.finish()
 
     def render_GET(self, request):
-        if self.page == '':
-            request.redirect('main')
+        if self.page == b'':
+            request.redirect(b'main')
         else:
             request.setResponseCode(404)
-            request.write("nada!\n")
+            request.write(b"nada!\n")
         request.finish()
         return server.NOT_DONE_YET
 
@@ -707,105 +710,105 @@ class MainPage(Resource):
             log.msg("POST received Args: " + str(request.args) + "\n")
             log.msg("POST received Content: " +
                     str(request.content.getvalue()) + "\n")
-        try:
+#         try:
             '''
             Global exception handler to avoid letting bad connections open  
             '''
+        try:
+            '''
+            Check if it is a url-encoded or json-encoded request 
+            '''
+            client = request.args[b'client'][0]
+            action = request.args[b'action'][0]
             try:
-                '''
-                Check if it is a url-encoded or json-encoded request 
-                '''
-                client = request.args['client'][0]
-                action = request.args['action'][0]
-                try:
-                    command = request.args['command'][0]
-                except:
-                    command = False
-                try:
-                    param = request.args['param'][0]
-                except:
-                    if command:
-                        if command == 'setrecipe':
-                            param = request.args
-                if self.debug:
-                    log.msg("url-encoded request: %s" % action)
+                command = request.args[b'command'][0]
             except:
-                dictreq = json.load(request.content)
-                # log.msg(dictreq)
-                client = dictreq['client']
-                action = dictreq['action']
-                command = dictreq['command']
-                param = dictreq['params']
-                if self.debug:
-                    log.msg("json-encoded request: %s" % action)
+                command = False
+            try:
+                param = request.args[b'param'][0]
+            except:
+                if command:
+                    if command == b'setrecipe':
+                        param = request.args
+            if self.debug:
+                log.msg("url-encoded request: %s" % action)
+        except:
+            dictreq = json.load(request.content)
+            # log.msg(dictreq)
+            client = dictreq['client']
+            action = dictreq['action']
+            command = dictreq['command']
+            param = dictreq['params']
+            if self.debug:
+                log.msg("json-encoded request: %s" % action)
 
-            if client == 'web':
-                if action in ('status',
-                              'close',
-                              'play',
-                              'record',
-                              'reload',
-                              'cocktail',
-                              'stop',
-                              'config',
-                              'pump',
-                              'test'):
-                    if action == 'config':
-                        if param:
-                            '''
-                            Update Data
-                            '''
-                            if self.debug:
-                                log.msg(
-                                    "request processed param = " + str(param))
-                            self.updateDB(request, command, param)
-                        else:
-                            '''
-                            Get Data
-                            '''
-                            if self.debug:
-                                log.msg("request without parameter")
-                            self.queryDB(request, command)
-                    elif action == 'pump':
-                        if command:
-                            control = dbUtils.getPump(
-                                self.parent.dbsession, command[1:])
-                            if self.debug:
-                                log.msg("pump command: " + command)
-                            try:
-                                switchcontrol(control, int(
-                                    not self.parent.serving), self.debug)
-                                self.parent.serving = not self.parent.serving
-                                #log.msg("serving = %s" % self.parent.serving)
-                                request.write('0')
-                            except:
-                                log.msg("i2c system error")
-                                request.write('1')
-                        request.finish()
-
-                    elif action == 'cocktail':
-                        d = threads.deferToThread(
-                            self.parent.serve, *(command,))
-                        d.addCallbacks(self.resultOk, errback=self.resultFailed,
-                                       callbackArgs=(request,), errbackArgs=(request,))
-                else:
-                    request.write("bad command")
+        if client == b'web':
+            if action in (b'status',
+                          b'close',
+                          b'play',
+                          b'record',
+                          b'reload',
+                          b'cocktail',
+                          b'stop',
+                          b'config',
+                          b'pump',
+                          b'test'):
+                if action == b'config':
+                    if param:
+                        '''
+                        Update Data
+                        '''
+                        if self.debug:
+                            log.msg(
+                                "request processed param = " + str(param))
+                        self.updateDB(request, command, param)
+                    else:
+                        '''
+                        Get Data
+                        '''
+                        if self.debug:
+                            log.msg("request without parameter")
+                        self.queryDB(request, command.decode("utf8"))
+                elif action == b'pump':
+                    if command:
+                        control = dbUtils.getPump(
+                            self.parent.dbsession, command[1:])
+                        if self.debug:
+                            log.msg("pump command: " + command)
+                        try:
+                            switchcontrol(control, int(
+                                not self.parent.serving), self.debug)
+                            self.parent.serving = not self.parent.serving
+                            #log.msg("serving = %s" % self.parent.serving)
+                            request.write('0')
+                        except:
+                            log.msg("i2c system error")
+                            request.write('1')
                     request.finish()
-        except Exception, err:
-            log.msg("Error: " + err.message)
-            request.write("network error")
-            request.finish()
+
+                elif action == b'cocktail':
+                    d = threads.deferToThread(
+                        self.parent.serve, *(command,))
+                    d.addCallbacks(self.resultOk, errback=self.resultFailed,
+                                   callbackArgs=(request,), errbackArgs=(request,))
+            else:
+                request.write("bad command")
+                request.finish()
+#         except json.JSONDecodeError as err:
+#             log.msg("Error: " + str(err))
+#             request.write(b"network error")
+#             request.finish()
 
         return server.NOT_DONE_YET
 
     def updateDB(self, request, command, params):
-        if command in ('setconf',
-                       'setcocking',
-                       'setrecipe',
-                       'getcocking'):
-            func = getattr(self, command)
+        if command in (b'setconf',
+                       b'setcocking',
+                       b'setrecipe',
+                       b'getcocking'):
+            func = getattr(self, command.decode("utf8"))
         else:
-            func = getattr(dbUtils, command)
+            func = getattr(dbUtils, command.decode("utf8"))
         d = threads.deferToThread(func, *(self.parent.dbsession, params,))
         d.addCallback(self.resultOk, *(request, True,))
         d.addErrback(self.resultFailed, *(request, True,))
@@ -814,6 +817,7 @@ class MainPage(Resource):
         d.addBoth(self.parent.lockDB, *(False, command[3:],))
 
     def queryDB(self, request, command):
+        print(str(command))
         if command == ('getconf'):
             func = getattr(self, command)
         else:

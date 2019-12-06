@@ -270,7 +270,7 @@ def getPump(session, num):
         pump = [p.type, int(p.i2cbus, 16),  int(
             p.i2caddr), p.ratio, p.function]
 
-    except Exception, err:
+    except Exception as err:
         # print(err.message)
         pump = [err.message]
 

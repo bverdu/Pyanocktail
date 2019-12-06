@@ -58,7 +58,8 @@ def PIANOCKTAIL(notes):
     else:
         piano = np.loadtxt(notes)
     l = piano.shape[0]
-
+    print(piano)
+    print(l)
     # Liste des ON / OFF / SUSTAIN
     M_On = piano[piano[:, 1] == 1, :]
     nbnotes_piece = M_On.shape[0]
@@ -101,6 +102,8 @@ def PIANOCKTAIL(notes):
     del M_Off
     del piano
 
+    print(M_On)
+
     note_piece = np.zeros([nbnotes_piece, 7])
     note_piece[:, 3] = M_On[:, 2]
     note_piece[:, 4] = M_On[:, 3]
@@ -113,6 +116,7 @@ def PIANOCKTAIL(notes):
     nbnotes_piece = size_piece[0]
 
     # Duration of the piece in seconds:
+    print(note_piece)
     t_piece = np.max(note_piece[:, 5])
     duree = t_piece
 

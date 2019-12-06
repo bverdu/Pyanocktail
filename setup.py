@@ -18,25 +18,27 @@ import sys
 
 from distutils.core import setup
 
+
 def refresh_plugin_cache():
     from twisted.plugin import IPlugin, getPlugins
     list(getPlugins(IPlugin))
 
+
 if __name__ == '__main__':
-    
+
     if sys.version_info[:2] >= (2, 4):
         extraMeta = dict(
             classifiers=[
                 "Development Status :: 4 - Beta",
                 "Environment :: No Input/Output (Daemon)",
-                "Programming Language :: Python2.7",
+                "Programming Language :: Python3",
             ])
     else:
         extraMeta = {}
 
     setup(
         name="Pianocktail",
-        version='0.5',
+        version='0.6',
         description="Pianocktail server.",
         author=__author__,
         author_email="bertrand.verdu@gmail.com",
@@ -46,7 +48,7 @@ if __name__ == '__main__':
             "twisted.plugins",
         ],
         package_data={
-            'twisted': ['plugins/pyanocktail_plugin.py'],  
+            'twisted': ['plugins/pyanocktail_plugin.py'],
         },
         data_files=[('/usr/share/pianocktail/html', ['html/Pianocktail.html']),
                     ('/usr/share/pianocktail/html', ['html/config.html']),
@@ -55,24 +57,36 @@ if __name__ == '__main__':
                     ('/usr/share/pianocktail/html', ['html/recipes.html']),
                     ('/usr/share/pianocktail/html', ['html/pianocktail.js']),
                     ('/usr/share/pianocktail/html', ['html/style.css']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/pyanocktail.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/cocktail2.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/play2.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/stop2.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/record.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/save.png']),
-                    ('/usr/share/pianocktail/html/pictures', ['html/pictures/poweroff2.png']),
-                    ('/usr/share/pianocktail/scripts', ['scripts/PIANOCKTAIL.sci']),
-                    ('/usr/share/pianocktail/scripts', ['scripts/RECETTE.sci']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/pyanocktail.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/cocktail2.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/play2.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/stop2.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/record.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/save.png']),
+                    ('/usr/share/pianocktail/html/pictures',
+                     ['html/pictures/poweroff2.png']),
+                    ('/usr/share/pianocktail/scripts',
+                     ['scripts/PIANOCKTAIL.sci']),
+                    ('/usr/share/pianocktail/scripts',
+                     ['scripts/RECETTE.sci']),
                     ('/usr/share/pianocktail/scripts', ['scripts/TEMPO.sci']),
-                    ('/usr/share/pianocktail/scripts', ['scripts/TONALITE.sci']),
-                    ('/usr/share/pianocktail/scripts', ['scripts/METRIQUE.sci']),
-                    ('/usr/share/pianocktail/html/fonts', ['html/fonts/DEFTONE.ttf']),
+                    ('/usr/share/pianocktail/scripts',
+                     ['scripts/TONALITE.sci']),
+                    ('/usr/share/pianocktail/scripts',
+                     ['scripts/METRIQUE.sci']),
+                    ('/usr/share/pianocktail/html/fonts',
+                     ['html/fonts/DEFTONE.ttf']),
                     ('/etc/pianocktail', []),
                     ('/usr/share/pianocktail/db', []),
                     ('/usr/lib/systemd/system', ['pianocktail.service']),
                     ('/usr/lib/systemd/system', ['pianocktail_80.service']),
                     ('/usr/lib/systemd/system', ['pianocktail_80.socket'])],
-          **extraMeta)
-    
+        **extraMeta)
+
     refresh_plugin_cache()
