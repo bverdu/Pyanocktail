@@ -87,7 +87,7 @@ def switchcontrol(control, on=0, debug=False):
                 gpio_ctrl[idx].config(control[2], gpio_ctrl[idx].OUTPUT)
                 gpio_ctrl[idx].output(control[2], 0)
     except Exception as err:
-        print(err.message)
+        print(str(err))
         raise
 
 
@@ -123,7 +123,7 @@ def playRecipe(ingredients_list, qty=1, debug=False):
                 idx = len(init_gpio) - 1
             gpio_ctrl[idx].config(ingredient[2], gpio_ctrl[idx].OUTPUT)
             gpio_ctrl[idx].output(ingredient[2], 1)
-            time.sleep(ingredient[3] * qty)
+            time.sleep(ingredient[3] * float(qty))
             gpio_ctrl[idx].output(ingredient[2], 0)
 
         elif ingredient[0] == 'pwm':
@@ -141,16 +141,16 @@ def playRecipe(ingredients_list, qty=1, debug=False):
                     for ratio, duration in res:
                         pwm_ctrl[idx].setPWM(ingredient[2], int(
                             ratio * ingredient[4] * 1024.0), 0)
-                        time.sleep(duration * qty)
+                        time.sleep(duration * float(qty))
                 except Exception as e:
-                    print(e.message)
+                    print(str(e))
                     pwm_ctrl[idx].setPWM(
                         ingredient[2], int(ingredient[4] * 1024.0), 0)
-                    time.sleep(ingredient[3] * qty)
+                    time.sleep(ingredient[3] * float(qty))
             else:
                 pwm_ctrl[idx].setPWM(
                     ingredient[2], int(ingredient[4] * 1024.0), 0)
-                time.sleep(ingredient[3] * qty)
+                time.sleep(ingredient[3] * float(qty))
             pwm_ctrl[idx].setPWM(ingredient[2], 0, 0)
 
         elif ingredient[0] == 'stepper':
@@ -208,7 +208,7 @@ def playRecipe(ingredients_list, qty=1, debug=False):
                             motor.forward()
                         time.sleep(duration)
                 except Exception as e:
-                    print(e.message)
+                    print(str(e))
                     pwm_ctrl[idx].setPWM(
                         addresses[0], int(ingredient[4] * 1024.0), 0)
                     if float(ingredient[3]) < 0:
@@ -244,7 +244,7 @@ class Fake_bus(object):
         print("Fake bus initialized")
 
     def __getattr__(self, attr):
-        print('getattr: %s' % attr)
+        #         print('getattr: %s' % attr)
         return lambda *args: print(" - ".join([str(arg) for arg in args]))
 
 

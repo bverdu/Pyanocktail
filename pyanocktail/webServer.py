@@ -445,10 +445,10 @@ class MidiProtocol(protocol.ProcessProtocol):
     def childDataReceived(self, childFD, data):
         if childFD == 1:
             for l in data.split(b'\n'):
-                print(l.lstrip()[2:])
+                #                 print(l.lstrip()[2:])
                 try:
                     c = int(l.split()[0])
-                    print(c)
+#                     print(c)
                     self.factory.receive(c, l.lstrip()[2:])
                 except IndexError:
                     if l != b'':
@@ -688,7 +688,7 @@ class MainPage(Resource):
         request.finish()
 
     def endRequest(self, res, req, com, result):
-        print(result)
+        #         print(result)
         getattr(req, com)(result.encode("utf8"))
         req.finish()
 
@@ -817,7 +817,7 @@ class MainPage(Resource):
         d.addBoth(self.parent.lockDB, *(False, command[3:],))
 
     def queryDB(self, request, command):
-        print(str(command))
+        #         print(str(command))
         if command == ('getconf'):
             func = getattr(self, command)
         else:
