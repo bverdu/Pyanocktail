@@ -6,7 +6,7 @@ pkgdesc="A Pianocktail Server In Python using Twisted Git version"
 arch=('any')
 url="https://github.com/bverdu/Pyanocktail"
 license=('LGPL2')
-depends=('python' 'python-setuptools' 'python-pyalsa' 'python-twisted' 'python-sqlalchemy' 'python-autobahn' 'i2c-tools')
+depends=('python' 'python-setuptools' 'python-numpy' 'python-pyalsa' 'python-twisted' 'python-sqlalchemy' 'python-autobahn' 'i2c-tools')
 md5sums=('SKIP')
 source=("git+https://github.com/bverdu/Pyanocktail.git")
 
