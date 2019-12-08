@@ -176,7 +176,7 @@ class Seq(Sequencer):
         while not self.make_seqs():
             test += 1
             if test > 5:
-                print("giving up", file=sys.stderr)
+                print("Unable to create Sequencer", file=sys.stderr)
                 break
             print("test: %d" % test, file=sys.stderr)
 
@@ -327,10 +327,9 @@ class Seq(Sequencer):
         sys.exit()
 
     def _handleCommand(self, command):
-        print('handle cmd: %s' % command, file=sys.stderr)
+        #         print('handle cmd: %s' % command, file=sys.stderr)
         try:
             params = command.split()[1:]
-            print()
             self.commands[command.split()[0]](*params)
         except Exception as err:
             print('unknown command: %s' % command, file=sys.stderr)
@@ -344,15 +343,15 @@ class Seq(Sequencer):
 #             evt = str(int(event[0] == '1'))+' '+event[1:].strip('\n')+\
 #             ' '+str(event_time)
         try:
-            print(event.type == SEQ_EVENT_NOTEON, file=sys.stderr)
-            print("type: %d" % event.type, file=sys.stderr)
+            #             print(event.type == SEQ_EVENT_NOTEON, file=sys.stderr)
+            #             print("type: %d" % event.type, file=sys.stderr)
             evt = str(event_time * 1000) + ' ' +\
                 str(int(event.get_data()['note.velocity'] > 0)) + ' ' +\
                 str(event.get_data()['note.note']) + ' ' +\
                 str(event.get_data()['note.velocity'])
         except AttributeError:
-            print(event[0] == b'1', file=sys.stderr)
-            print(event[0], file=sys.stderr)
+            #             print(event[0] == b'1', file=sys.stderr)
+            #             print(event[0], file=sys.stderr)
             evt = str(event_time * 1000) + ' ' +\
                 str(int(chr(event[0]))) + ' ' +\
                 (event[1:].strip(b'\n')).decode("utf8") + ' ' +\
@@ -440,9 +439,9 @@ class Seq(Sequencer):
                 test = events[0]
             except IndexError:
                 command = read(command_in, 20)
-                print("444: %s" % command, file=sys.stderr)
+#                 print("444: %s" % command, file=sys.stderr)
                 for c in command.split(b'\n'):
-                    print(c, file=sys.stderr)
+                    #                     print(c, file=sys.stderr)
                     if len(c) > 0:
                         if int(c[0]) < 58:
                             self._handleMidiEvent(c[:5], event_time)

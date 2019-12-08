@@ -136,7 +136,8 @@ class WebService(StreamServerEndpointService):
         self.dbsession.commit()
 
     def badResult(self):
-        self.wsfactory.sendmessage(u'On ne sert pas les fainéants !!!\n')
+        self.wsfactory.sendmessage(
+            'On ne sert pas les fainéants !!!\n'.encode("utf8"))
 
     def showResult(self, result):
         '''

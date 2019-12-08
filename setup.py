@@ -43,6 +43,7 @@ if __name__ == '__main__':
         author=__author__,
         author_email="bertrand.verdu@gmail.com",
         url="http://github.com/bverdu/Pyanocktail",
+        install_requires="twisted autobahn numpy pyalsa i2c-tools Rpi.GPIO",
         packages=[
             "pyanocktail",
             "twisted.plugins",
