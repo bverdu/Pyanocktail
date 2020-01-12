@@ -272,7 +272,7 @@ def getPump(session, num):
 
     except Exception as err:
         # print(err.message)
-        pump = [err.message]
+        pump = [str(err)]
 
     return pump
 

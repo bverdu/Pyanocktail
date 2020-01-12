@@ -30,8 +30,16 @@ from optparse import OptionParser
 #     SEQ_EVENT_NOTE, \
 #     SEQ_EVENT_NOTEON, \
 #     SEQ_EVENT_NOTEOFF
-from pyalsa.alsaseq import Sequencer, SeqEvent
-
+from pyalsa.alsaseq import Sequencer, \
+    SeqEvent, \
+    SEQ_EVENT_NOTEON, \
+    SEQ_EVENT_NOTEOFF, \
+    SEQ_EVENT_CONTROLLER, \
+    SEQ_EVENT_PGMCHANGE, \
+    SEQ_BLOCK, \
+    SequencerError
+# from pyalsa.alsaseq import Sequencer, SeqEvent
+#
 SEQ_TIME_STAMP_REAL = 1
 SEQ_PORT_TYPE_MIDI_GENERIC = 2
 SEQ_PORT_TYPE_PORT = 524288
@@ -42,8 +50,8 @@ SEQ_PORT_CAP_WRITE = 2
 SEQ_PORT_CAP_SUBS_READ = 32
 SEQ_PORT_CAP_READ = 1
 SEQ_EVENT_NOTE = 5
-SEQ_EVENT_NOTEON = 6
-SEQ_EVENT_NOTEOFF = 7
+# SEQ_EVENT_NOTEON = 6
+# SEQ_EVENT_NOTEOFF = 7
 
 options = {}
 options[('-l', '--list')] = {'dest': 'list_type',
@@ -68,76 +76,258 @@ class player(Thread):
         self.seq = seq
         self.notes = seq.records
         self.running = False
-        q = self.seq.queue
-        self.seq.start_queue(q)
-        tempo, ppq = self.seq.queue_tempo(q)
+#         q = self.seq.queue
+        tempo, ppq = self.seq.queue_tempo(self.seq.queue)
         print('tempo: %d ppq: %d' % (tempo, ppq), file=sys.stderr)
         self.mdilist = []
-        mdindex = []
+        mdindex = {}
         delay = float(self.notes[0].split()[0])
         for data in self.notes:
             note = data.split()
             if int(note[1]) == 1:
-                try:
-                    mdindex.index([int(note[2]), 1])
-                    print('double noteon', file=sys.stderr)
-                except:
-                    mdindex.append([int(note[2]), 1])
-                    self.mdilist.append([int(note[2]), int(note[3]), float(
-                        note[0]) - delay, float(note[0]) - delay, 64])
+                #                 try:
+                #                     mdindex.index(int(note[2]))
+                #                     print('double noteon', file=sys.stderr)
+                #                 except:
+                if int(note[2]) in mdindex:
+                    mdindex[int(note[2])].append(len(self.mdilist))
+                else:
+                    mdindex[int(note[2])] = [len(self.mdilist)]
+                self.mdilist.append([int(note[2]), int(note[3]), float(
+                    note[0]) - delay, 500, 64])
+                last = float(note[0]) - delay
             elif int(note[1]) == 0:
                 try:
-                    k = mdindex.index([int(note[2]), 1])
-                    self.mdilist[k][3] = float(
-                        note[0]) - delay - self.mdilist[k][3]
-                    self.mdilist[k][4] = int(note[3])
-                    mdindex[k] = [int(note[2]), 0]
-                except:
-                    print('orphan note_off', file=sys.stderr)
+                    if int(note[2]) in mdindex:
+                        i = mdindex[int(note[2])].pop()
+                        self.mdilist[i][3] = float(
+                            note[0]) - delay - self.mdilist[i][2]
+                        self.mdilist[i][4] = int(note[3])
+                        if len(mdindex[int(note[2])]) < 1:
+                            #                             print("del %d from index" % int(note[2]),
+                            #                                   file=sys.stderr)
+                            del mdindex[int(note[2])]
+#                     k = mdindex.index(int(note[2]))
+#                     self.mdilist[k][3] = float(
+#                         note[0]) - delay - self.mdilist[k][3]
+#                     self.mdilist[k][4] = int(note[3])
+#                     mdindex.pop(k)
+#                     mdindex[k] = [int(note[2]), 0]
+                    else:
+                        #                 except ValueError:
+                        print('orphan note_off: %d, index: %s' % (
+                            int(note[2]), str(mdindex)), file=sys.stderr)
+                except Exception as e:
+                    print("error on line %d: %s" % (i, str(e)),
+                          file=sys.stderr)
+                    print("note: %s" % str(note), file=sys.stderr)
+                    print("list: %s" % str(self.mdilist[i]), file=sys.stderr)
             else:
-                print('controller event', file=sys.stderr)
+                #                 print('controller event', file=sys.stderr)
+                if int(note[1]) == 3:
+                    self.mdilist.append([-3, int(note[2]),
+                                         float(note[0]) - delay, int(note[3]),
+                                         int(note[4])])
+                elif int(note[1]) == 4:
+                    self.mdilist.append([-4, int(note[2]),
+                                         float(note[0]) - delay, int(note[3])])
+                else:
+                    print('??', file=sys.stderr)
         Thread.__init__(self, target=self.play, args=(e_stop,))
 
     def play(self, e_stop):
         self.running = True
         self.paused = False
         self.out = False
+#         self.seq.start_queue(self.seq.queue)
+        self.seq.start_queue(0)
+#         self.tmst = time() + (self.mdilist[-1][2] / 1000.00)
+#         print("time: %d, tmst: %d, delta: %d" % (
+#             time(), self.tmst, self.mdilist[-1][2] / 1000.00),
+#             file=sys.stderr)
         if self.seq.outClientId:
-            i = 0
-            n = 0
-            while len(self.mdilist) > 0:
-                #             print('len of mdilist: %d' % len(self.mdilist))
-                sleep(0.001)
-                event = self.mdilist.pop(0)
-                evt = SeqEvent(SEQ_EVENT_NOTE)
+            delay = float(self.notes[0].split()[0]) / 1000.00
+            last = 0.0
+            for n in self.notes:
+                note = n.split()
+#                 print(note, file=sys.stderr)
+                if e_stop.is_set():
+                    print("bye", file=sys.stderr)
+                    break
+                evtime = float(note[0]) / 1000.00 - delay
+                if len(note) > 4:
+                    evtype, evdata, evparam, evvalue = [
+                        int(v) for v in note[1:]]
+                else:
+                    evtype, evdata, evparam = [int(v) for v in note[1:]]
+                print(evdata, file=sys.stderr)
+                sleep(evtime - last)
+                last = evtime
+                if evtype == 1:
+                    evt = SeqEvent(6)  # Note On
+                    evt.set_data({'note.note': evdata,
+                                  'note.velocity': evparam})
+                elif evtype == 0:
+                    evt = SeqEvent(7)  # Note Off
+                    evt.set_data({'note.note': evdata})
+                elif evtype == 3:
+                    evt = SeqEvent(10)  # CONTROL
+                    evt.set_data({'control.channel': evdata,
+                                  'control.param': evparam,
+                                  'control.value': evvalue})
+                elif evtype == 4:
+                    evt = SeqEvent(11)  # PGMCHANGE
+                    evt.set_data({'control.channel': evdata,
+                                  'control.value': evparam})
+                else:
+                    print("Unknow Event: %d" % evtype, file=sys.stderr)
+                    continue
                 evt.source = (self.seq.client_id, self.seq.outportId)
                 evt.dest = (self.seq.outClientId, self.seq.outClientPort)
-                evt.timestamp = SEQ_TIME_STAMP_REAL
-                evt.time = float(event[2]) / 1000.000
-        #                 print(event[3])
-        #                 evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : event[3]*t , 'note.off_velocity' : event[4]})
-                evt.set_data({'note.note': event[0], 'note.velocity': event[1], 'note.duration': int(
-                    event[3]), 'note.off_velocity': event[4]})
-                evt.queue = self.seq.queue
-        #             print('play event: %s %s' % (evt, evt.get_data()), file=sys.stderr)
+                print('play event: %s %s' % (
+                    evt, evt.get_data()), file=sys.stderr)
                 self.seq.output_event(evt)
+#                 self.seq.sync_output_queue()
                 self.seq.drain_output()
-                i += 1
-                if i > 20:
-                    n += 1
-        #                 print('boucle %d' % n)
-        #                 print('go')
-                    self.seq.sync_output_queue()
-                    if e_stop.is_set():
-                        self.seq.stop_queue(self.seq.queue)
-        #                     print("exit")
-                        self.out = True
-                        break
-                    i = 0
-        #         print("end of thread")
-            if self.out == False:
+
+#             i = 0
+#             n = len(self.mdilist)
+#             print(n, file=sys.stderr)
+#             while len(self.mdilist) > 0:
+#                 #             print('len of mdilist: %d' % len(self.mdilist))
+#                 #                 sleep(0.001)
+#                 event = self.mdilist.pop(0)
+#                 note = False
+#                 if event[0] > 0:
+#                     note = True
+#                     i += 1
+#                     evt = SeqEvent(6)
+#             #                 print(event[3])
+#             #                 evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : event[3]*t , 'note.off_velocity' : event[4]})
+#                     evt.set_data({'note.note': event[0],
+#                                   'note.velocity': event[1]})
+# #                                   'note.duration': int(event[3]),
+# #                                   'note.off_velocity': event[4]})
+#                 else:
+#                     if event[0] == -3:
+#                         evt = SeqEvent(10)  # Controler
+# #                         print("channel: %d, param: %d, value: %d" % (event[1],
+# #                                                                      event[3],
+# #                                                                      event[4]),
+# #                         file=sys.stderr)
+#                         try:
+#                             evt.set_data({'control.channel': event[1],
+#                                           'control.param': event[3],
+#                                           'control.value': event[4]})
+# #                             print("param: %d, value: %d" % (event[3], event[4]),
+# #                                   file=sys.stderr)
+#                         except TypeError:
+#                             print("ERR param: %d, value: %d" % (event[3], event[4]),
+#                                   file=sys.stderr)
+#                             evt.set_data({'control.channel': 1,
+#                                           'control.param': 1,
+#                                           'control.value': 1})
+#                     elif event[0] == -4:
+#                         evt = SeqEvent(11)  # PGMCHANGE
+#                         try:
+#                             evt.set_data({'control.channel': event[1],
+#                                           'control.value': event[3]})
+# #                             print("value: %d" % event[3], file=sys.stderr)
+#                         except TypeError:
+#                             print("ERR value: %d" % event[3], file=sys.stderr)
+#                             evt.set_data({'control.channel': event[1],
+#                                           'control.value': 1})
+# #                 evt.source = (self.seq.client_id, self.seq.outportId)
+#                 evt.dest = (self.seq.outClientId, self.seq.outClientPort)
+# #                 evt.time = None
+# #                 evt.timestamp = SEQ_TIME_STAMP_REAL
+# #                 evt.time = float(event[2]) / 1000.000
+# #                 evt.queue = self.seq.queue
+#                 print('play event: %s %s' %
+#                       (evt, evt.get_data()), file=sys.stderr)
+#                 self.seq.output_event(evt)
+#                 self.seq.drain_output()
+#                 sleep(float(event[2]) / 1000.000)
+# #                 if note:
+# #                     evt = SeqEvent(7)
+# #             #                 print(event[3])
+# #             #                 evt.set_data({'note.note' : event[0], 'note.velocity' : event[1], 'note.duration' : event[3]*t , 'note.off_velocity' : event[4]})
+# #                     evt.set_data({'note.note': event[0]})
+# #                     evt.dest = (self.seq.outClientId, self.seq.outClientPort)
+# #                     self.seq.output_event(evt)
+# #                     self.seq.drain_output()
+# #                 if n < 1000 and started:
+# #                     sleep(1)
+# #                     self.seq.drain_output()
+# #                 self.seq.drain_output()
+#
+# #                 if i > (n / 20):
+# #                     print(".", file=sys.stderr)
+# # #                     sleep(1)
+# # #                     self.seq.sync_output_queue()
+# #
+# #                     i = 0
+#
+#
+# #                     print("drain", file=sys.stderr)
+# #                     self.seq.drain_output()
+# #                     i = 0
+#                 if e_stop.is_set():
+#                     print("bye", file=sys.stderr)
+#                     #                     self.seq.drain_output()
+#                     #                     self.seq.sync_output_queue()
+#                     #                     self.seq.stop_queue(self.seq.queue)
+#                     #                     self.out = True
+#                     break
+# #                 try:
+# #                     self.seq.drain_output()
+# #                 except SequencerError:
+# #                     print("Seq error on drain", file=sys.stderr)
+# #                     pass
+# #                 i += 1
+# #                 if i > 100:
+# #
+# #                     n += 1
+# #                     print('boucle %d, i= %d' % (n, i), file=sys.stderr)
+# #         #                 print('go')
+# #                     i = 0
+# #                     self.seq.sync_output_queue()
+# #                     if e_stop.is_set():
+# #                         self.seq.stop_queue(self.seq.queue)
+# #         #                     print("exit")
+# #                         self.out = True
+# #                         break
+# #                     i = 0
+#         #         print("end of thread")
+#
+# #             if self.out == False:
+# #             sleep(5)
+# #             try:
+# #                 self.seq.drain_output()
+# #                 sleep(0.1)
+# #             except SequencerError:
+# #                 print("oups...", file=sys.stderr)
+# #                 self.seq.sync_output_queue()
+#
+# #                 self.seq.sync_output_queue()
+# #             sleep(10)
+#             while time() < self.tmst:
+#                 if e_stop.is_set():
+#                     break
+#                 self.seq.drain_output()
+            if not e_stop.is_set():
                 self.seq.sync_output_queue()
-                self.seq.stop_queue(self.seq.queue)
+                if not e_stop.is_set():
+                    self.seq.drain_output()
+
+            while True:
+                try:
+                    self.seq.stop_queue(self.seq.queue)
+                    print("stopped", file=sys.stderr)
+                    break
+                except SequencerError:
+                    pass
+#                     print("oups 2...", file=sys.stderr)
         #         self.seq.delete_queue(q)
             self.running = False
             self.seq.playing = False
@@ -145,6 +335,8 @@ class player(Thread):
             e_stop.clear()
         else:
             print('0 Not Sequencer')
+
+#         self.seq = None
 
 #     def stop(self, event):
 #         self.running = False
@@ -163,8 +355,13 @@ class Seq(Sequencer):
     '''Main sequencer class with utility functions
     parameter: name of the sequencer'''
 
-    def __init__(self, name):
-        Sequencer.__init__(self)
+    def __init__(self, name, blocking=False):
+        #         Sequencer.__init__(self)
+        if blocking:
+            Sequencer.__init__(self, mode=SEQ_BLOCK)
+        else:
+            Sequencer.__init__(self)
+#         Sequencer.__init__(self, mode=SEQ_BLOCK)
         self.commands = {b'connect': self.connect, b'serve': self.serve, b'disconnect': self.disconnect_ports,
                          b'record': self.record, b'load': self.load, b'play': self.play, b'list': self.list, b'quit': self.quit}
         self.clientname = name
@@ -321,7 +518,7 @@ class Seq(Sequencer):
         f = open(self.filename, 'w+')
         f.writelines(note_list)
         f.close()
-        print('2 file saved')
+        print('4 File saved')
 
     def quit(self):
         sys.exit()
@@ -331,11 +528,11 @@ class Seq(Sequencer):
         try:
             params = command.split()[1:]
             self.commands[command.split()[0]](*params)
-        except Exception as err:
+        except IndexError:
             print('unknown command: %s' % command, file=sys.stderr)
 
     def _handleMidiEvent(self, event, time_):
-        event_time = time_ - self.start_time
+        event_time = (time_ - self.start_time) * 1000
 #         try:
 #             evt = str(int(event.type == SEQ_EVENT_NOTEON))+' '\
 #             +str(event.get_data()['note.note'])+' '+str(event_time)
@@ -345,20 +542,60 @@ class Seq(Sequencer):
         try:
             #             print(event.type == SEQ_EVENT_NOTEON, file=sys.stderr)
             #             print("type: %d" % event.type, file=sys.stderr)
-            evt = str(event_time * 1000) + ' ' +\
-                str(int(event.get_data()['note.velocity'] > 0)) + ' ' +\
-                str(event.get_data()['note.note']) + ' ' +\
-                str(event.get_data()['note.velocity'])
+            d = event.get_data()
+            if event.type in (SEQ_EVENT_NOTEON, SEQ_EVENT_NOTEOFF):
+                if d['note.velocity'] > 0:
+                    evt = "%d %d %d %d" % (event_time,
+                                           int(event.type == SEQ_EVENT_NOTEON),
+                                           d['note.note'],
+                                           d['note.velocity'])
+#                     evt = str(event_time * 1000) + ' ' +\
+#                         str(int(event.type == SEQ_EVENT_NOTEON)) + ' ' +\
+#                         str(event.get_data()['note.note']) + ' ' +\
+#                         str(event.get_data()['note.velocity'])
+                    print("Note: %s" % ("ON" if event.type == SEQ_EVENT_NOTEON
+                                        else "OFF"), file=sys.stderr)
+                else:
+                    evt = "%d 0 %d 0" % (event_time,
+                                         d['note.note'])
+                    print("Note: %s" % "OFF (velocity = 0)", file=sys.stderr)
+            elif event.type == SEQ_EVENT_CONTROLLER:
+                evt = "%d 3 %d %d %d" % (event_time,
+                                         d['control.channel'],
+                                         d['control.param'],
+                                         d['control.value'])
+                print('CTRL event: %s : %s' %
+                      (event, str(event.get_data())), file=sys.stderr)
+            elif event.type == SEQ_EVENT_PGMCHANGE:
+                evt = "%d 4 %d %d" % (event_time,
+                                      d['control.channel'],
+                                      d['control.value'])
+            else:
+                print('got unknown event: %s : %s' %
+                      (event, str(event.get_data())), file=sys.stderr)
+                return
+
+#                 evt = str(event_time * 1000) + ' ' +\
+#                     str(int(event.get_data()['note.velocity'] > 0)) + ' ' +\
+#                     str(event.get_data()['note.note']) + ' ' +\
+#                     str(event.get_data()['note.velocity'])
+#                 print("type: %d %s" % (event.type, str(event.type)),
+#                       file=sys.stderr)
+#                 print("my types: %d %s, %d %s" % (SEQ_EVENT_NOTEON,
+#                                                   str(SEQ_EVENT_NOTEON),
+#                                                   SEQ_EVENT_NOTEOFF,
+#                                                   str(SEQ_EVENT_NOTEOFF)),
+#                       file=sys.stderr)
         except AttributeError:
             #             print(event[0] == b'1', file=sys.stderr)
             #             print(event[0], file=sys.stderr)
-            evt = str(event_time * 1000) + ' ' +\
+            evt = str(event_time) + ' ' +\
                 str(int(chr(event[0]))) + ' ' +\
                 (event[1:].strip(b'\n')).decode("utf8") + ' ' +\
                 '64'
-        except:
-            print('got unknown event: %s at %s' %
-                  (event, event_time), file=sys.stderr)
+        except KeyError:
+            print('got wrong event: %s : %s' %
+                  (event, str(event.get_data())), file=sys.stderr)
             return
         print(evt, file=sys.stderr)
         self._store_event(evt)
@@ -386,6 +623,7 @@ class Seq(Sequencer):
             # skip midi through
             if cname == 'Midi Through' or cname == self.clientname:
                 continue
+            print(ports)
             for port in ports:
                 pid = port[1]
                 try:
@@ -425,6 +663,7 @@ class Seq(Sequencer):
         self.load(filename)
         poller = select.poll()
         self.filename = filename
+        print('File: %s ' % self.filename, file=sys.stderr)
         print('Sequenceur Midi %s started on pid %d' %
               (self.clientname, getpid()), file=sys.stderr)
         if auto:

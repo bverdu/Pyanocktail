@@ -18,6 +18,7 @@
 		<div id="page">
 			<header>
 				<h1 onclick='buttonclick("fullscreen")'>Pianocktail</h1>
+				<div class="head">
 				<nav>
 					<ul>
 						<li>
@@ -44,12 +45,13 @@
 				<button style="color: #760001;" id='shutdown' type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 					<img src="../pictures/poweroff2.png" alt="Shutdown" /> 
 				</button>
+				</div>
 			</header>
 			<div id="command_panel">
 				<section>
 				<article id="key_command">
 					<canvas id="control_panel" width="600px" height="300px"></canvas>
-					<aside>
+					<aside id="g1">
 						<div id="command_buttons">
 							<button id="stop" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								<img src="../pictures/stop2.png" alt="Stop" />
@@ -65,7 +67,7 @@
 					<canvas id="piano_keyboard" width="800px" height="120px"></canvas>
 					
 				</article>
-				<aside>
+				<aside id="g2">
 						<div id="command_buttons2">
 							<button id="play" type="button" onclick="buttonclick(id)" ontouchstart="buttondown(id)">
 								<img src="../pictures/play2.png" alt="Play" />

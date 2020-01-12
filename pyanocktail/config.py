@@ -189,11 +189,11 @@ def loadconffromfile(obj, filename):
     emptyfile = True
     for line in open(filename, 'r').readlines():
         try:
-            if str(line.split('=')[1]).rstrip('\n').isdigit():
-                #                print("digit!")
-                setattr(obj, line.split('=')[0], int(
+            try:
+                setattr(obj, line.split('=')[0], float(
                     line.split('=')[1].rstrip('\n')))
-            else:
+                print("digit: %s" % str(line.split('=')[1]).rstrip('\n'))
+            except ValueError:
                 if line.split('=')[0] == "debug":
                     if line.split('=')[1].rstrip('\n') == "False":
                         setattr(obj, 'debug', False)
@@ -207,6 +207,24 @@ def loadconffromfile(obj, filename):
                     if obj.debug:
                         print(line.split('=')[0] + ' ',
                               str(line.split('=')[1]).rstrip('\n'))
+#             if str(line.split('=')[1]).rstrip('\n').isdigit():
+#
+#                 setattr(obj, line.split('=')[0], int(
+#                     line.split('=')[1].rstrip('\n')))
+#             else:
+#                 if line.split('=')[0] == "debug":
+#                     if line.split('=')[1].rstrip('\n') == "False":
+#                         setattr(obj, 'debug', False)
+#                         #print("debug mode off")
+#                     else:
+#                         setattr(obj, 'debug', True)
+#                         print("debug mode on")
+#                 else:
+#                     setattr(obj, line.split('=')[0], str(
+#                         line.split('=')[1]).rstrip('\n'))
+#                     if obj.debug:
+#                         print(line.split('=')[0] + ' ',
+#                               str(line.split('=')[1]).rstrip('\n'))
             list_params.append(line.split('=')[0])
             emptyfile = False
         except:

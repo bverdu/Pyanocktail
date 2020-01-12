@@ -153,34 +153,39 @@ class WebService(StreamServerEndpointService):
         '''
         transmit or execute commands from websocket or gpio interfaces
         '''
-        if command == b'stop':
+        if not isinstance(command, str):
+            command = command.decode('utf8')
+        if command == 'stop':
             if self.playing:
-                self.midifactory.command(b'play 0')
+                self.midifactory.command('play 0')
                 self.playing = False
             if self.recording:
-                self.midifactory.command(b'record 0')
+                self.midifactory.command('record 0')
                 self.recording = False
             if self.opened:
                 pass
-        elif command in (b'play', b'record'):
-            self.midifactory.command(command + b' 1')
-            if command == b'play':
+        elif command in ('play', 'record'):
+            self.midifactory.command(command + ' 1')
+            if command == 'play':
                 self.playing = True
             else:
                 self.analyzed['cocktail'] = 0
                 self.analyzed['result'] = b''
-                if self.recording == False:
+                if not self.recording:
                     self.recording = True
                     self.notes = []
-        elif command == b'cocktail':
+        elif command == 'cocktail':
             if self.analyzed['cocktail'] > 0:
                 d = threads.deferToThread(
                     self.serve, *(self.analyzed['cocktail'], self.conf.factor))
                 d.addCallback(self.wsfactory.sendmessage)
-                self.wsfactory.sendmessage(b'Service en cours...\n')
+                self.wsfactory.sendmessage(
+                    b'Service en cours, %.1f cocktail%s...\n' % (
+                        self.conf.factor,
+                        b"s" if self.conf.factor > 1 else b''))
             else:
                 if self.recording:
-                    self.midifactory.command(b'record 0')
+                    self.midifactory.command('record 0')
                     self.recording = False
                     if self.analyzed['cocktail'] == 0:
                         # @UndefinedVariable
@@ -189,7 +194,7 @@ class WebService(StreamServerEndpointService):
                         # @UndefinedVariable
                         reactor.callLater(  # @UndefinedVariable
                             1, self.set_command, 'cocktail')
-        elif command[:4] == b'test':
+        elif command[:4] == 'test':
             cont = dbUtils.getPump(self.dbsession, command[6:])
             if len(cont) > 1:
                 if cont[0] == 'gpio_in':
@@ -197,7 +202,7 @@ class WebService(StreamServerEndpointService):
                         try:
                             self.set_command(cont[4].split(
                                 ",")[0], cont[4].split(",")[1])
-                        except:
+                        except IndexError:
                             self.set_command(cont[4].split(",")[0])
                     except Exception as err:
                         print(err.message)
@@ -208,12 +213,12 @@ class WebService(StreamServerEndpointService):
                     switchcontrol(cont, on=1, debug=self.debug)
                     self.serving = True
             else:
-                log.msg("i2c error: no data found for pump n°:%s"
-                        % str(command[6:]))
+                log.msg("i2c error: no data found for pump n°:%s, error: %s"
+                        % (str(command[6:]), cont[0]))
         else:
             try:
-                fct = getattr(self, b"sys_" + command)
-            except:
+                fct = getattr(self, "sys_" + command)
+            except AttributeError:
                 log.msg("unknow function: %s" % command)
             else:
                 fct(args)
@@ -223,7 +228,7 @@ class WebService(StreamServerEndpointService):
         manage commands from midi process
         '''
         if self.debug:
-            log.msg('command from midi process: %s' % command)
+            log.msg('command from midi process: %s' % command.decode("utf8"))
         if command == b'Recorded':
             self.wsfactory.sendmessage(b"Analysing...")
 #             log.msg(self.notes)
@@ -281,18 +286,21 @@ class WebService(StreamServerEndpointService):
         if self.debug:
             log.msg('data from midi process: %s' % data)
 
-    def set_data(self, data, args=''):
+    def set_data(self, data, _args=''):
         if self.debug:
             log.msg(data + b' sent to midiprocess')
         self.midifactory.send(data)
 
     def serve(self, cocktail_id, qty=1):
+        if not isinstance(cocktail_id, int):
+            if not isinstance(cocktail_id, str):
+                cocktail_id = cocktail_id.decode("utf8")
         service = dbUtils.getServe(self.dbsession, cocktail_id)
         playRecipe(service, qty, self.debug)
         return b"Cocktail Servi!"
 
     def analyze_old(self, tabs):
-        #log.msg("analyse requested")
+        #        log.msg("analyse requested")
         prog = os.path.abspath(self.conf.extProgram)
         if self.debug:
             log.msg("Analyze executable: %s" % prog)
@@ -303,8 +311,11 @@ class WebService(StreamServerEndpointService):
                                    path=os.path.join(
                                        self.conf.installdir, "scripts"),
                                    env=en, errortoo=True)
-        d.addCallback(filter_process_result, *(tabs, float(self.conf.complexind),
-                                               float(self.conf.tristind), float(self.conf.nervind), self.debug))
+        d.addCallback(filter_process_result, *(tabs,
+                                               float(self.conf.complexind),
+                                               float(self.conf.tristind),
+                                               float(self.conf.nervind),
+                                               self.debug))
         d.addCallback(self.showResult)
 
     def analyze(self, tabs):
@@ -323,7 +334,7 @@ class WebService(StreamServerEndpointService):
     def sys_shutdown(self, args):
         if self.debug:
             log.msg("Shutdown requested")
-        d = utils.getProcessValue('/usr/bin/systemctl', ['poweroff'])
+        d = utils.getProcessValue('/bin/systemctl', ['poweroff'])
 #         d = utils.getProcessValue('/usr/bin/true')
         d.addCallback(self.shutdown)
 
@@ -372,7 +383,7 @@ class SeqFactory(WebSocketServerFactory):
             return defer.Deferred(self.parent.set_data(b'0 ' + data[1:]))
         else:
             if self.debug:
-                log.msg('string: ' + str(data))
+                log.msg('command: ' + data.decode("utf8"))
 
             return defer.Deferred(self.parent.set_command(data))
 
@@ -392,7 +403,7 @@ class PyanoTCP(WebSocketServerProtocol):
 
     def onMessage(self, data, binary):
         if self.factory.debug:
-            log.msg('data from ws: ' + str(data))
+            log.msg('data from ws: ' + data.decode("utf8"))
         if data == b'status':
             self.send(self.factory.lastmsg)
             return
@@ -451,8 +462,8 @@ class MidiProtocol(protocol.ProcessProtocol):
                     c = int(l.split()[0])
 #                     print(c)
                     self.factory.receive(c, l.lstrip()[2:])
-                except IndexError:
-                    if l != b'':
+                except (IndexError, ValueError):
+                    if len(l) > 1:
                         log.msg("unknown message from midi process: %s" % l)
         elif childFD == 2:
             for l in data.split(b'\n'):
@@ -470,7 +481,7 @@ class MidiProtocol(protocol.ProcessProtocol):
 
     def write(self, data):
         if self.debug:
-            log.msg('sending %s' % data)
+            log.msg('sending %s' % data.decode("utf8"))
         self.transport.write(data + b'\n')
 
     def shutdown(self):
@@ -491,9 +502,15 @@ class MidiFactory(protocol.Factory):
 #         self.proto = MidiProtocol(debug=debug)
 
     def send(self, data):
+        if isinstance(data, str):
+            data = data.encode('utf8')
         self.proto.write(data)
 
     def command(self, command, args=b''):
+        if isinstance(command, str):
+            command = command.encode("utf8")
+        if isinstance(args, str):
+            args = args.encode("utf8")
         self.proto.write(command + b" " + args)
 
     def receive(self, c, data):
@@ -713,27 +730,27 @@ class MainPage(Resource):
                     str(request.content.getvalue()) + "\n")
 #         try:
             '''
-            Global exception handler to avoid letting bad connections open  
+            Global exception handler to avoid letting bad connections open
             '''
         try:
             '''
-            Check if it is a url-encoded or json-encoded request 
+            Check if it is a url-encoded or json-encoded request
             '''
-            client = request.args[b'client'][0]
-            action = request.args[b'action'][0]
+            client = request.args[b'client'][0].decode('utf8')
+            action = request.args[b'action'][0].decode('utf8')
             try:
-                command = request.args[b'command'][0]
-            except:
+                command = request.args[b'command'][0].decode("utf8")
+            except (AttributeError, KeyError,):
                 command = False
             try:
-                param = request.args[b'param'][0]
-            except:
+                param = request.args[b'param'][0].decode('utf8')
+            except (AttributeError, KeyError,):
                 if command:
-                    if command == b'setrecipe':
-                        param = request.args
+                    if command == 'setrecipe':
+                        param = request.args.decode("utf8")
             if self.debug:
                 log.msg("url-encoded request: %s" % action)
-        except:
+        except (AttributeError, KeyError):
             dictreq = json.load(request.content)
             # log.msg(dictreq)
             client = dictreq['client']
@@ -743,25 +760,25 @@ class MainPage(Resource):
             if self.debug:
                 log.msg("json-encoded request: %s" % action)
 
-        if client == b'web':
-            if action in (b'status',
-                          b'close',
-                          b'play',
-                          b'record',
-                          b'reload',
-                          b'cocktail',
-                          b'stop',
-                          b'config',
-                          b'pump',
-                          b'test'):
-                if action == b'config':
+        if client == 'web':
+            if action in ('status',
+                          'close',
+                          'play',
+                          'record',
+                          'reload',
+                          'cocktail',
+                          'stop',
+                          'config',
+                          'pump',
+                          'test'):
+                if action == 'config':
                     if param:
                         '''
                         Update Data
                         '''
                         if self.debug:
                             log.msg(
-                                "request processed param = " + str(param))
+                                "request processed param = %s" % str(param))
                         self.updateDB(request, command, param)
                     else:
                         '''
@@ -769,8 +786,8 @@ class MainPage(Resource):
                         '''
                         if self.debug:
                             log.msg("request without parameter")
-                        self.queryDB(request, command.decode("utf8"))
-                elif action == b'pump':
+                        self.queryDB(request, command)
+                elif action == 'pump':
                     if command:
                         control = dbUtils.getPump(
                             self.parent.dbsession, command[1:])
@@ -780,20 +797,20 @@ class MainPage(Resource):
                             switchcontrol(control, int(
                                 not self.parent.serving), self.debug)
                             self.parent.serving = not self.parent.serving
-                            #log.msg("serving = %s" % self.parent.serving)
-                            request.write('0')
+                            # log.msg("serving = %s" % self.parent.serving)
+                            request.write(b'0')
                         except:
                             log.msg("i2c system error")
-                            request.write('1')
+                            request.write(b'1')
                     request.finish()
 
-                elif action == b'cocktail':
+                elif action == 'cocktail':
                     d = threads.deferToThread(
                         self.parent.serve, *(command,))
                     d.addCallbacks(self.resultOk, errback=self.resultFailed,
                                    callbackArgs=(request,), errbackArgs=(request,))
             else:
-                request.write("bad command")
+                request.write(b"bad command")
                 request.finish()
 #         except json.JSONDecodeError as err:
 #             log.msg("Error: " + str(err))
@@ -803,13 +820,13 @@ class MainPage(Resource):
         return server.NOT_DONE_YET
 
     def updateDB(self, request, command, params):
-        if command in (b'setconf',
-                       b'setcocking',
-                       b'setrecipe',
-                       b'getcocking'):
-            func = getattr(self, command.decode("utf8"))
+        if command in ('setconf',
+                       'setcocking',
+                       'setrecipe',
+                       'getcocking'):
+            func = getattr(self, command)
         else:
-            func = getattr(dbUtils, command.decode("utf8"))
+            func = getattr(dbUtils, command)
         d = threads.deferToThread(func, *(self.parent.dbsession, params,))
         d.addCallback(self.resultOk, *(request, True,))
         d.addErrback(self.resultFailed, *(request, True,))
@@ -859,7 +876,10 @@ class MainPage(Resource):
                 else:
                     setattr(self.conf, param, True)
             else:
-                setattr(self.conf, param, params[param])
+                if param in ('factor',):
+                    setattr(self.conf, param, float(params[param]))
+                else:
+                    setattr(self.conf, param, params[param])
         self.conf.save(self.conf.configdir)
         d['updated'] = "1"
         return d

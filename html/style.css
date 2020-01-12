@@ -102,7 +102,8 @@ header nav
 {
    	/*margin-top:1%;*/
    	/*position:absolute;*/
-   	margin-left: 120px;
+   	/*margin-left: 120px;*/
+/*    float: right;*/
    	text-align: right;
     display: inline-block;
     margin-right: 5px;
@@ -135,6 +136,11 @@ nav a:hover
     border-bottom: 3px solid #760001;
 }
 
+.head {
+    float: right;
+    margin-right: 1%;
+}
+
 header button
 {
 	height: 70px;
@@ -149,17 +155,32 @@ header button
 	/*margin-left: 100px;*/
 	font-size: 1.5em;
 	z-index: 1;
+/*    width: 800px;*/
 	
 	
 }
+#g3
+{
+    top: 110px;
+    left: 720px;
+    position: absolute;
+}
+
+#g4
+{
+    top: 115px;
+    left: 910px;
+    position: absolute;
+}
 aside
 {
+    top: 100px;
     display: inline-block;
     margin-top: 5px;
     vertical-align: top;
     width: 180px;
-   	top: 100px;
-   	/*margin-left: 84px;*/
+   	
+   	margin-left: 0px;*/*/
     background-color: #706b64;
     box-shadow: 0px 2px 5px #1c1a19;
     border-radius: 5px;
