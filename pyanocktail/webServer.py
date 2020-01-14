@@ -726,8 +726,8 @@ class MainPage(Resource):
             log.msg("POST received Headers: " +
                     str(request.getAllHeaders()) + "\n")
             log.msg("POST received Args: " + str(request.args) + "\n")
-            log.msg("POST received Content: " +
-                    str(request.content.getvalue()) + "\n")
+            log.msg("POST received Content: %s" %
+                    request.content.getvalue().decode('utf8'))
 #         try:
             '''
             Global exception handler to avoid letting bad connections open
@@ -738,6 +738,7 @@ class MainPage(Resource):
             '''
             client = request.args[b'client'][0].decode('utf8')
             action = request.args[b'action'][0].decode('utf8')
+            log.msg("222")
             try:
                 command = request.args[b'command'][0].decode("utf8")
             except (AttributeError, KeyError,):
@@ -747,10 +748,11 @@ class MainPage(Resource):
             except (AttributeError, KeyError,):
                 if command:
                     if command == 'setrecipe':
-                        param = request.args.decode("utf8")
+                        param = request.args
             if self.debug:
                 log.msg("url-encoded request: %s" % action)
-        except (AttributeError, KeyError):
+        except (AttributeError, KeyError) as err:
+            print(err)
             dictreq = json.load(request.content)
             # log.msg(dictreq)
             client = dictreq['client']
@@ -894,20 +896,22 @@ class MainPage(Resource):
         if self.debug:
             log.msg("setrecipe params: " + str(params))
         req = {}
-        req['id'] = int(params['cocktail_id'][0])
+        req['id'] = int(params[b'cocktail_id'][0].decode("utf8"))
         ingredients = []
-        for i in range((len(params) - 4) / 2):
+        for i in range(int((len(params) - 4) / 2)):
             ingredients.append([])
             ingredients[i].append([])
             ingredients[i].append([])
-        for key in params:
-            if key not in ('config', 'action', 'command', 'cocktail_id'):
+        for k, v in params.items():
+            key = k.decode("utf8")
+            if key not in (
+                    'config', 'action', 'command', 'cocktail_id'):
                 if key.split()[0] == 'ing':
                     ingredients[int(key.split()[1]) -
-                                1][0] = int(params[key][0])
+                                1][0] = int(v[0].decode("utf8"))
                 elif key.split()[0] == 'qty':
                     ingredients[int(key.split()[1]) -
-                                1][1] = int(params[key][0])
+                                1][1] = int(v[0].decode("utf8"))
         req['ingredients'] = ingredients
         dbUtils.setRecipe(dbsession, req)
         return 1

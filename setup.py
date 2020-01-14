@@ -38,7 +38,7 @@ if __name__ == '__main__':
 
     setup(
         name="Pianocktail",
-        version='0.7.2',
+        version='0.7.3',
         description="Pianocktail server.",
         author=__author__,
         author_email="bertrand.verdu@gmail.com",
